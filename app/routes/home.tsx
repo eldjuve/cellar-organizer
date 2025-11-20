@@ -1,0 +1,101 @@
+import type { Route } from "./+types/home";
+import { Fridge } from "~/components/Storage/Fridge";
+import { env } from "workers/store";
+
+import {
+  PositionContextProvider,
+  usePositionContext,
+} from "../components/PositionContextProvider";
+import { List } from "~/components/List";
+import { Display } from "~/components/Storage/Selected";
+import { fetchWineData } from "~/utils.server";
+import { getSession } from "~/sessions.server";
+import { redirect } from "react-router";
+import { StorageView } from "~/components/Storage/Storage";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Cellar Tracker cellar organizer" },
+    { name: "description", content: "Organize your wine!" },
+  ];
+}
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await getSession(request.headers.get("Cookie"));
+
+  if (!session.has("username") || !session.has("password")) {
+    // Redirect to the login page if they are not signed in.
+    return redirect("/login");
+  }
+
+  const inventory = await fetchWineData(
+    session.get("username")!,
+    session.get("password")!,
+  );
+
+  const userStore = env.BOTTLE_STORE.getByName(session.get("username")!);
+  const locations = await userStore.getInventory();
+
+  return { inventory, locations };
+}
+
+export async function action({ request }: Route.ActionArgs) {
+  const session = await getSession(request.headers.get("Cookie"));
+
+  const userStore = env.BOTTLE_STORE.getByName(session.get("username")!);
+
+  const formData = await request.formData();
+  const wineId = formData.get("iWine") as string;
+  const locations = formData.get("locations") as string;
+  await userStore.placeBottle(wineId, locations);
+  return null;
+}
+
+export default function Home({ loaderData }: Route.ComponentProps) {
+  return (
+    <main className="p-2 flex flex-col gap-4 h-dvh overflow-hidden">
+      <PositionContextProvider
+        inventory={loaderData.inventory}
+        storedPlacements={loaderData.locations}
+      >
+        <Columns />
+        <MobileMenu />
+      </PositionContextProvider>
+    </main>
+  );
+}
+
+const Columns = () => {
+  const { activeTab } = usePositionContext();
+  return (
+    <div className="flex h-full gap-4 overflow-hidden">
+      <aside
+        className={`flex-1 overflow-y-auto ${activeTab === "storage" ? "max-md:hidden" : ""}`}
+      >
+        <List />
+      </aside>
+      <aside
+        className={`flex-1 overflow-hidden ${activeTab === "list" ? "max-md:hidden" : ""}`}
+      >
+        <StorageView />
+      </aside>
+    </div>
+  );
+};
+
+const MobileMenu = () => {
+  const { activeTab, toggleTab } = usePositionContext();
+
+  return (
+    <nav className="mobile-menu flex w-full justify-center md:hidden">
+      <button className="flex border rounded" onClick={toggleTab}>
+        <div className={`p-2 ${activeTab === "list" && "bg-blue-800"}`}>
+          Winelist
+        </div>
+        <div className={`p-2 ${activeTab === "storage" && "bg-blue-800"}`}>
+          Storage
+        </div>
+      </button>
+    </nav>
+  );
+};

@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans:
+    "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+html,
+body {
+  @apply bg-gray-950;
+  color-scheme: dark;
+}
+
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 100%;
+}
+
+.double-row {
+  &:nth-child(odd) {
+    .slot:nth-child(even) {
+      --spacing: 0.15rem;
+      flex-grow: 1;
+    }
+  }
+  &:nth-child(even) {
+    .slot:nth-child(odd) {
+      --spacing: 0.15rem;
+      flex-grow: 1;
+    }
+  }
+}
+
+.button-primary {
+  @apply font-bold py-2 px-4 rounded;
+  @apply bg-blue-500 text-white;
+
+  &:hover {
+    @apply bg-blue-700;
+  }
+}
+
+.loader {
+  width: 50px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 8px solid #0000;
+  border-right-color: #ffa50097;
+  position: relative;
+  animation: l24 1s infinite linear;
+}
+.loader:before,
+.loader:after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: inherit;
+  animation: inherit;
+  animation-duration: 2s;
+}
+.loader:after {
+  animation-duration: 4s;
+}
+@keyframes l24 {
+  100% {
+    transform: rotate(1turn);
+  }
+}
