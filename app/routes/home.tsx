@@ -1,5 +1,4 @@
 import type { Route } from "./+types/home";
-import { Fridge } from "~/components/Storage/Fridge";
 import { env } from "workers/store";
 
 import {
@@ -7,11 +6,11 @@ import {
   usePositionContext,
 } from "../components/PositionContextProvider";
 import { List } from "~/components/List";
-import { Display } from "~/components/Storage/Selected";
 import { fetchWineData } from "~/utils.server";
 import { getSession } from "~/sessions.server";
-import { redirect } from "react-router";
+import { redirect, useFetcher } from "react-router";
 import { StorageView } from "~/components/Storage/Storage";
+import { useState } from "react";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -36,7 +35,10 @@ export async function loader({ request }: Route.LoaderArgs) {
   const userStore = env.BOTTLE_STORE.getByName(session.get("username")!);
   const locations = await userStore.getInventory();
 
-  return { inventory, locations };
+  const setupStore = env.SETUP_STORE.getByName(session.get("username")!);
+  const setupList = await setupStore.getSetupList();
+
+  return { inventory, locations, setupList };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -58,14 +60,14 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         inventory={loaderData.inventory}
         storedPlacements={loaderData.locations}
       >
-        <Columns />
+        <Columns setupList={loaderData.setupList} />
         <MobileMenu />
       </PositionContextProvider>
     </main>
   );
 }
 
-const Columns = () => {
+const Columns = ({ setupList }: { setupList: string[] }) => {
   const { activeTab } = usePositionContext();
   return (
     <div className="flex h-full gap-4 overflow-hidden">
@@ -75,10 +77,50 @@ const Columns = () => {
         <List />
       </aside>
       <aside
-        className={`flex-1 overflow-hidden ${activeTab === "list" ? "max-md:hidden" : ""}`}
+        className={`flex-1 overflow-hidden flex flex-col gap-2 ${activeTab === "list" ? "max-md:hidden" : ""}`}
       >
+        <SetupSelector setupList={setupList} />
         <StorageView />
       </aside>
+    </div>
+  );
+};
+
+const SetupSelector = ({ setupList }: { setupList: string[] }) => {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState("");
+  const fetcher = useFetcher();
+
+  const handleCreate = () => {
+    fetcher.submit({ name }, { method: "post", action: "/setup" });
+    setEditing(false);
+    setName("");
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      {setupList.length > 0 && (
+        <select className="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-slate-100">
+          {setupList.map((n) => (
+            <option key={n}>{n}</option>
+          ))}
+        </select>
+      )}
+      {editing ? (
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Setup name"
+            className="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-slate-100"
+          />
+          <button onClick={handleCreate} className="button-primary">Save</button>
+          <button onClick={() => setEditing(false)} className="button-secondary">Cancel</button>
+        </div>
+      ) : (
+        <button onClick={() => setEditing(true)} className="button-primary">New Setup</button>
+      )}
     </div>
   );
 };
