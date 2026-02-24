@@ -1,6 +1,10 @@
 import { DurableObject } from "cloudflare:workers";
 import { createRequestHandler } from "react-router";
-import type { BottlePlacements } from "types";
+import type {
+  BottlePlacements,
+  StorageSetup,
+  StorageSetupOverview,
+} from "types";
 
 declare module "react-router" {
   export interface AppLoadContext {
@@ -30,8 +34,8 @@ export class BottlePlacementStore extends DurableObject<Env> {
     super(ctx, env);
   }
 
-  async placeBottle(iWine: string, positions: string) {
-    this.ctx.storage.kv.put(iWine, positions);
+  async placeBottle(iWine: string, position: string) {
+    this.ctx.storage.kv.put(iWine, position);
   }
 
   async getInventory(): Promise<BottlePlacements> {
@@ -45,8 +49,31 @@ export class BottlePlacementStore extends DurableObject<Env> {
     }
     return {};
   }
+}
 
-  async getStorage() {
-    const store = await this.ctx.storage.list()
+export class StorageSetupStore extends DurableObject<Env> {
+  constructor(ctx: DurableObjectState, env: Env) {
+    // Required, as we are extending the base class.
+    super(ctx, env);
+  }
+
+  async setSetup(name: string, setup: StorageSetup) {
+    this.ctx.storage.put(name, setup);
+  }
+
+  async getSetup(key: string): Promise<StorageSetup | null> {
+    const store = await this.ctx.storage.get(key);
+    if (store) {
+      return store as StorageSetup;
+    }
+    return null;
+  }
+
+  async getSetupList(): Promise<string[]> {
+    const store = await this.ctx.storage.list<StorageSetup>();
+    if (store) {
+      return [...store.keys()];
+    }
+    return [];
   }
 }

@@ -21,12 +21,20 @@
         "name": "BOTTLE_STORE",
         "class_name": "BottlePlacementStore",
       },
+      {
+        "name": "SETUP_STORE",
+        "class_name": "StorageSetupStore",
+      },
     ],
   },
   "migrations": [
     {
       "tag": "v1",
       "new_sqlite_classes": ["BottlePlacementStore"],
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["StorageSetupStore"],
     },
   ],
   /**
