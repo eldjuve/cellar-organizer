@@ -1,7 +1,7 @@
 export type WineItem = {
   iWine: string;
   WineBarcode: string;
-  Quantity: string;
+  Quantity: number;
   Pending: string;
   Size: string;
   Price: string;
@@ -73,6 +73,16 @@ export type BottlePlacements = { [iWine: string]: string[] };
 
 export type WineLocation = WineItem & { positions: string[] };
 
+export type ShelfProps = {
+  capacity: number;
+  innerRow: boolean;
+  layers?: number;
+};
+
+export type StorageSetup = ShelfProps[];
+
+export type StorageSetupOverview = { [name: string]: StorageSetup };
+
 export interface Env {
-  SESSION_SECRET: string
+  SESSION_SECRET: string;
 }
