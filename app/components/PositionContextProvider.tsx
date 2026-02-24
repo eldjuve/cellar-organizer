@@ -85,7 +85,7 @@ export const PositionContextProvider = ({
     } else if (
       selectedWine &&
       (!storage[selectedWine.iWine] ||
-        parseInt(selectedWine.Quantity) > storage[selectedWine.iWine].length)
+        selectedWine.Quantity > storage[selectedWine.iWine].length)
     ) {
       const locations = [...(storage[selectedWine.iWine] ?? []), position];
       setStorage((prev) => ({
