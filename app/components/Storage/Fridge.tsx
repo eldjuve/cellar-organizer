@@ -1,47 +1,46 @@
+import type { ShelfProps } from "types";
 import { usePositionContext } from "../PositionContextProvider";
-import { Dump } from "./Dump";
-
-export type ShelfProps = {
-  capacity: number;
-  innerRow: boolean;
-  layers?: number;
-};
 
 const defaultConfig = [
-  { capacity: 16, innerRow: true, layers: 2 },
-  { capacity: 16, innerRow: true },
-  { capacity: 16, innerRow: true },
-  { capacity: 16, innerRow: true },
-  { capacity: 16, innerRow: true },
-  { capacity: 16, innerRow: true },
-  { capacity: 7, innerRow: false },
-  { capacity: 7, innerRow: false },
+  { capacity: 12, innerRow: true, layers: 2 },
+  { capacity: 12, innerRow: true },
+  { capacity: 12, innerRow: true },
+  { capacity: 12, innerRow: true },
+  { capacity: 12, innerRow: true },
+  { capacity: 12, innerRow: true },
+  { capacity: 6, innerRow: false },
+  { capacity: 6, innerRow: false },
 ];
 
 export function Fridge({ config }: { config?: ShelfProps[] }) {
   const shelfs = config ?? defaultConfig;
 
+  const maxCapacity = Math.max(...shelfs.map((shelf) => shelf.capacity));
+
   return (
     <ul className="flex flex-col justify-center p-4 overflow-x-auto">
       {shelfs.map((layers, index) => (
-        <Shelf options={layers} id={index + 1} key={index} />
+        <Shelf options={layers} id={index + 1} key={index}  maxCapacity={maxCapacity}/>
       ))}
     </ul>
   );
 }
 
-export function Shelf({ options, id }: { options: ShelfProps; id: number }) {
+export function Shelf({ options, id, maxCapacity }: { options: ShelfProps; id: number; maxCapacity: number }) {
   return (
-    <li className="shelf flex flex-col-reverse w-full border-b-2 mb-1 pb-1 border-amber-600 items-center">
-      {Array.from({ length: options.layers ?? 1 }).map((_, index) => (
-        <Layer
-          {...options}
-          level={index}
-          id={`${id}.${index + 1}`}
-          key={index}
-        />
-      ))}
+    <li className="shelf-container">
+      <div className={`shelf`} style={{gridTemplateColumns: `repeat(${maxCapacity},minmax(1rem,1fr))`}}>
+        {Array.from({ length: options.layers ?? 1 }).map((_, index) => (
+          <Layer
+            {...options}
+            level={index}
+            id={`${id}.${index + 1}`}
+            key={index}
+          />
+        )).reverse()}
+      </div>
     </li>
+
   );
 }
 
@@ -56,18 +55,16 @@ function Layer({
   innerRow: boolean;
   id: string;
 }) {
-  const layerCapacity = capacity - (level* (innerRow ? 2 : 1));
+  const layerCapacity = capacity - (level * (innerRow ? 2 : 1));
+  const leftMissingSlots = Math.floor((capacity - layerCapacity) / 2) + 1;
 
   return (
-    <div className={`row ${innerRow ? "double-row" : ""}`}>
-      {Array.from({ length: level }).map((_, index) => (
-        <BlindSlot key={index} />
-      ))}
+    <div 
+      className={`row ${level % 2 === 0 ? "--even" : "--odd"} ${innerRow ? "double-row" : ""}`} 
+      style={{gridColumnStart: leftMissingSlots}}
+    >
       {Array.from({ length: layerCapacity }).map((item, index) => (
         <Slot id={`${id}.${index + 1}`} key={index} />
-      ))}
-      {innerRow && Array.from({ length: level }).map((_, index) => (
-        <BlindSlot key={index} />
       ))}
     </div>
   );
@@ -94,13 +91,20 @@ function Slot({ id }: { id: string }) {
   };
 
   return (
-    <button
-      className={`slot min-w-6 max-w-10 grow-2 aspect-square border-2 border-black rounded-full text-black ${wine ? colorVariants[wine.Color] : "bg-white"} ${selectedWine && selectedWine.iWine === wine?.iWine ? "border-4 border-blue-400" : ""}`}
+    <div className="slot">
+       <button
+      className={`${wine ? colorVariants[wine.Color] : "bg-white"} ${selectedWine && selectedWine.iWine === wine?.iWine ? "border-4 border-blue-400" : ""}`}
       onClick={handleSelect}
     ></button>
+    </div>
+   
   );
 }
 
 function BlindSlot() {
-  return <div className={`slot min-w-3 max-w-10 border-2 border-transparent grow-2 aspect-square`}></div>;
+  return (
+    <div
+      className={`slot  border-2 border-transparent grow-2 aspect-square`}
+    ></div>
+  );
 }
