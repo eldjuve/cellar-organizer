@@ -8,7 +8,7 @@ import {
 import { List } from "~/components/List";
 import { fetchWineData } from "~/utils.server";
 import { getSession } from "~/sessions.server";
-import { redirect, useFetcher } from "react-router";
+import { Link, redirect, useFetcher } from "react-router";
 import { StorageView } from "~/components/Storage/Storage";
 import { useState } from "react";
 
@@ -89,6 +89,7 @@ const Columns = ({ setupList }: { setupList: string[] }) => {
 const SetupSelector = ({ setupList }: { setupList: string[] }) => {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
+  const [selected, setSelected] = useState(setupList[0] ?? "");
   const fetcher = useFetcher();
 
   const handleCreate = () => {
@@ -100,11 +101,18 @@ const SetupSelector = ({ setupList }: { setupList: string[] }) => {
   return (
     <div className="flex items-center gap-2">
       {setupList.length > 0 && (
-        <select className="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-slate-100">
-          {setupList.map((n) => (
-            <option key={n}>{n}</option>
-          ))}
-        </select>
+        <>
+          <select
+            value={selected}
+            onChange={(e) => setSelected(e.target.value)}
+            className="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-slate-100"
+          >
+            {setupList.map((n) => (
+              <option key={n}>{n}</option>
+            ))}
+          </select>
+          <Link to={`/setup/${selected}`} className="button-primary">Edit</Link>
+        </>
       )}
       {editing ? (
         <div className="flex gap-2">
