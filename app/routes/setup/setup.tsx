@@ -2,7 +2,7 @@ import { PositionContextProvider } from "~/components/PositionContextProvider";
 import { Shelf } from "~/components/Storage/Fridge";
 import { getSession } from "~/sessions.server";
 import type { Route } from "./+types/setup";
-import { redirect } from "react-router";
+import { redirect, useFetcher } from "react-router";
 import { useState } from "react";
 import { env } from "workers/store";
 import type { ShelfProps, StorageSetup } from "types";
@@ -15,48 +15,56 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const password = session.get("password");
 
   if (!username || !password) {
-    // Redirect to the login page if they are not signed in.
     return redirect("/login");
   }
 
-  if (!name) {
-    return redirect("/setup");
+  if (name === "new") {
+    return { config: [] as StorageSetup };
   }
 
   const userStore = env.SETUP_STORE.getByName(`${username}`);
-  const config = await userStore.getSetup(name);
+  const config = await userStore.getSetup(name!);
 
-  return { config };
+  return { config: config ?? [] };
+}
+
+export async function action({ request }: Route.ActionArgs) {
+  const session = await getSession(request.headers.get("Cookie"));
+  const username = session.get("username");
+  const password = session.get("password");
+
+  if (!username || !password) {
+    return redirect("/login");
+  }
+
+  const formData = await request.formData();
+  const name = formData.get("name") as string;
+  const config = JSON.parse(formData.get("config") as string) as StorageSetup;
+
+  const userStore = env.SETUP_STORE.getByName(`${username}`);
+  await userStore.setSetup(name, config);
+
+  return redirect(`/setup/${name}`);
 }
 
 export default function Component({ loaderData, params }: Route.ComponentProps) {
-  if (!loaderData || !loaderData.config) {
-    return (
-      <div className="min-h-screen flex flex-col items-center gap-4 bg-gradient-to-b from-slate-950 to-slate-900 p-4 text-slate-100">
-        <p>No data for {params.name}</p>
-      </div>
-    );
-  }
+  const isNew = params.name === "new";
 
   return (
     <div className="min-h-screen flex flex-col items-center gap-4 bg-gradient-to-b from-slate-950 to-slate-900 p-4 text-slate-100">
       <div className="w-full max-w-5xl rounded-xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl shadow-black/40 backdrop-blur">
-        <div className="mb-4 flex items-center gap-2">
-          <h1 className="text-lg font-semibold text-slate-100">
-            Configure {params.name} 🍷
-          </h1>
-        </div>
-
         <PositionContextProvider storedPlacements={{}} inventory={[]}>
-          <SetupFridge storedConfig={loaderData.config} />
+          <SetupFridge storedConfig={loaderData.config} initialName={isNew ? "" : params.name!} />
         </PositionContextProvider>
       </div>
     </div>
   );
 }
 
-export function SetupFridge({ storedConfig }: { storedConfig: StorageSetup }) {
+export function SetupFridge({ storedConfig, initialName }: { storedConfig: StorageSetup; initialName: string }) {
   const [config, setConfig] = useState(storedConfig);
+  const [name, setName] = useState(initialName);
+  const fetcher = useFetcher();
 
   const addShelf = () => {
     setConfig((cur) => {
@@ -82,17 +90,36 @@ export function SetupFridge({ storedConfig }: { storedConfig: StorageSetup }) {
     );
   };
 
+  const maxCapasity = Math.max(...config.map((shelf) => shelf.capacity));
+
+  const handleSave = () => {
+    fetcher.submit(
+      { name, config: JSON.stringify(config) },
+      { method: "post" },
+    );
+  };
+
   return (
-    <div className="flex flex-col mt-4">
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Setup name"
+          className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition"
+        />
+        <button className="button-primary" onClick={handleSave}>Save</button>
+      </div>
       <ul className="flex flex-col justify-center overflow-x-auto">
         {config.map((layers, index) => (
           <li key={index} className="p-2 border border-slate-700">
-            <ShelfOptions id={index} options={layers} onChange={updateShelf} />
+            <ShelfOptions id={index} options={layers} maxCapasity={maxCapasity} onChange={updateShelf} />
           </li>
         ))}
       </ul>
       <button
-        className="rouded-lg border border-slate-700 p-2"
+        className="rounded-lg border border-slate-700 p-2"
         onClick={addShelf}
       >
         New shelf
@@ -105,18 +132,21 @@ function ShelfOptions({
   id,
   options,
   onChange,
+  maxCapasity
 }: {
   id: number;
   options: ShelfProps;
+  maxCapasity: number;
   onChange: (shelf: number, options: ShelfProps) => void;
 }) {
+
 
   return (
     <>
       <div className="flex gap-4 overflow-hidden">
         <div className="grow-1 overflow-hidden">
           <div className="flex flex-col">
-            <Shelf options={options} id={id} />
+            <Shelf maxCapacity={maxCapasity} options={options} id={id} />
             <div className="flex gap-8 justify-center items-center">
               <label>
                 Bottles:{" "}
@@ -157,6 +187,7 @@ function ShelfOptions({
             onChange={(e) =>
               onChange(id, { ...options, layers: e.target.valueAsNumber })
             }
+            
             placeholder="Layers"
             className="w-22 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition"
           />
