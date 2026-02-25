@@ -14,77 +14,74 @@ const defaultConfig = [
 
 export function Fridge({ config }: { config?: ShelfProps[] }) {
   const shelfs = config ?? defaultConfig;
-
   const maxCapacity = Math.max(...shelfs.map((shelf) => shelf.capacity));
 
   return (
     <ul className="flex flex-col justify-center p-4 overflow-x-auto">
-      {shelfs.map((layers, index) => (
-        <Shelf options={layers} id={index + 1} key={index}  maxCapacity={maxCapacity}/>
+      {shelfs.map((shelf, index) => (
+        <Shelf options={shelf} shelfId={index + 1} key={index} maxCapacity={maxCapacity} />
       ))}
     </ul>
   );
 }
 
-export function Shelf({ options, id, maxCapacity }: { options: ShelfProps; id: number; maxCapacity: number }) {
+export function Shelf({ options, shelfId, maxCapacity }: { options: ShelfProps; shelfId: number; maxCapacity: number }) {
   return (
     <li className="shelf-container">
-      <div className={`shelf`} style={{gridTemplateColumns: `repeat(${maxCapacity},minmax(1rem,1fr))`}}>
+      <div className="shelf" style={{ gridTemplateColumns: `repeat(${maxCapacity},minmax(1rem,1fr))` }}>
         {Array.from({ length: options.layers ?? 1 }).map((_, index) => (
           <Layer
             {...options}
             level={index}
-            id={`${id}.${index + 1}`}
+            shelfId={shelfId}
+            layerId={index + 1}
             key={index}
           />
         )).reverse()}
       </div>
     </li>
-
   );
 }
 
 function Layer({
   capacity,
-  id,
+  shelfId,
+  layerId,
   level,
   innerRow,
 }: {
   capacity: number;
   level: number;
   innerRow: boolean;
-  id: string;
+  shelfId: number;
+  layerId: number;
 }) {
   const layerCapacity = capacity - (level * (innerRow ? 2 : 1));
   const leftMissingSlots = Math.floor((capacity - layerCapacity) / 2) + 1;
 
   return (
-    <div 
-      className={`row ${level % 2 === 0 ? "--even" : "--odd"} ${innerRow ? "double-row" : ""}`} 
-      style={{gridColumnStart: leftMissingSlots}}
+    <div
+      className={`row ${level % 2 === 0 ? "--even" : "--odd"} ${innerRow ? "double-row" : ""}`}
+      style={{ gridColumnStart: leftMissingSlots }}
     >
-      {Array.from({ length: layerCapacity }).map((item, index) => (
-        <Slot id={`${id}.${index + 1}`} key={index} />
+      {Array.from({ length: layerCapacity }).map((_, index) => (
+        <Slot shelf={shelfId} layer={layerId} slot={index + 1} key={index} />
       ))}
     </div>
   );
 }
 
-function Slot({ id }: { id: string }) {
-  const { onLocationSelect, inventoryByLocation, selectedWine, activeSetupId } =
+function Slot({ shelf, layer, slot }: { shelf: number; layer: number; slot: number }) {
+  const { onSlotSelect, inventoryByLocation, selectedWine, activeSetupId } =
     usePositionContext();
 
-  const wine = inventoryByLocation[`${activeSetupId}:${id}`];
-
-  if (wine) {
-    console.log("Wine at", id, "is", wine.Wine);
-  }
+  const wine = inventoryByLocation[`${activeSetupId}:${shelf}.${layer}.${slot}`];
 
   const handleSelect = () => {
-    onLocationSelect(id);
+    onSlotSelect(shelf, layer, slot);
   };
 
-  const colorVariants: { [key in typeof wine.Color]: string } = {
+  const colorVariants: { [key in "Red" | "White" | "Rosé"]: string } = {
     Red: "bg-red-400",
     White: "bg-yellow-200",
     Rosé: "bg-pink-300",
@@ -92,19 +89,16 @@ function Slot({ id }: { id: string }) {
 
   return (
     <div className="slot">
-       <button
-      className={`${wine ? colorVariants[wine.Color] : "bg-white"} ${selectedWine && selectedWine.iWine === wine?.iWine ? "border-4 border-blue-400" : ""}`}
-      onClick={handleSelect}
-    ></button>
+      <button
+        className={`${wine ? colorVariants[wine.Color] : "bg-white"} ${selectedWine && selectedWine.iWine === wine?.iWine ? "border-4 border-blue-400" : ""}`}
+        onClick={handleSelect}
+      ></button>
     </div>
-   
   );
 }
 
 function BlindSlot() {
   return (
-    <div
-      className={`slot  border-2 border-transparent grow-2 aspect-square`}
-    ></div>
+    <div className="slot border-2 border-transparent grow-2 aspect-square"></div>
   );
 }

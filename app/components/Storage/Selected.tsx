@@ -1,4 +1,4 @@
-import type { WineItem } from "types";
+import type { BottlePlacement, WineItem } from "types";
 import { usePositionContext } from "../PositionContextProvider";
 
 export function Display() {
@@ -14,7 +14,13 @@ export function Display() {
 const WinePosition = () => {
   const { selectedPosition } = usePositionContext();
 
-  return <div>{selectedPosition}</div>;
+  if (!selectedPosition) return null;
+
+  return (
+    <div>
+      Shelf {selectedPosition.shelf} · Layer {selectedPosition.layer} · Slot {selectedPosition.slot}
+    </div>
+  );
 };
 
 const WineDisplay = ({ wine }: { wine: WineItem }) => {
@@ -36,11 +42,11 @@ const WineDisplay = ({ wine }: { wine: WineItem }) => {
         <p>
           {locations.length}/{wine.Quantity} stored
         </p>
-        {locations.length > parseInt(wine.Quantity) && (
+        {locations.length > wine.Quantity && (
           <ul>
-            {locations.map((location) => (
-              <li key={location}>
-                <LocationDeselector location={location} />
+            {locations.map((placement) => (
+              <li key={`${placement.setupId}:${placement.shelf}.${placement.layer}.${placement.slot}`}>
+                <LocationDeselector placement={placement} />
               </li>
             ))}
           </ul>
@@ -50,36 +56,26 @@ const WineDisplay = ({ wine }: { wine: WineItem }) => {
   );
 };
 
-const LocationDeselector = ({ location }: { location: string }) => {
+const LocationDeselector = ({ placement }: { placement: BottlePlacement }) => {
   const { clearLocation } = usePositionContext();
 
   return (
     <button
       className="flex border-2 border-white items-stretch gap-1"
-      onClick={() => clearLocation(location)}
+      onClick={() => clearLocation(placement)}
     >
-      <LocationBadge location={location} />
+      <LocationBadge placement={placement} />
       <div className="bg-white/20 content-center p-1">❌</div>
     </button>
   );
 };
 
-const LocationBadge = ({ location }: { location: string }) => {
-  if (location === "dump") {
-    return (
-      <div className="whitespace-nowrap p-1">
-        <div>Off-shelf</div>
-      </div>
-    );
-  }
-
-  const [shelf, layer, position] = location.split(".");
-
+const LocationBadge = ({ placement }: { placement: BottlePlacement }) => {
   return (
     <div className="whitespace-nowrap p-1">
-      <div>Shelf: {shelf}</div>
-      <div>Layer: {layer}</div>
-      <div>Pos: {position}</div>
+      <div>Shelf: {placement.shelf}</div>
+      <div>Layer: {placement.layer}</div>
+      <div>Pos: {placement.slot}</div>
     </div>
   );
 };

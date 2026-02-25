@@ -147,7 +147,7 @@ function ShelfOptions({
       <div className="flex gap-4 overflow-hidden">
         <div className="grow-1 overflow-hidden">
           <div className="flex flex-col">
-            <Shelf maxCapacity={maxCapasity} options={options} id={id} />
+            <Shelf maxCapacity={maxCapasity} options={options} shelfId={id} />
             <div className="flex gap-8 justify-center items-center">
               <label>
                 Bottles:{" "}

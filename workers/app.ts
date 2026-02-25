@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { createRequestHandler } from "react-router";
-import type { BottlePlacements, SetupListItem, StorageSetup } from "types";
+import type { BottlePlacement, BottlePlacements, SetupListItem, StorageSetup } from "types";
 
 declare module "react-router" {
   export interface AppLoadContext {
@@ -26,24 +26,39 @@ export default {
 
 export class BottlePlacementStore extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
-    // Required, as we are extending the base class.
     super(ctx, env);
+    ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS placements (
+        iWine    TEXT    NOT NULL,
+        setup_id TEXT    NOT NULL,
+        shelf    INTEGER NOT NULL,
+        layer    INTEGER NOT NULL,
+        slot     INTEGER NOT NULL,
+        PRIMARY KEY (setup_id, shelf, layer, slot)
+      )
+    `);
   }
 
-  async placeBottle(iWine: string, position: string) {
-    this.ctx.storage.kv.put(iWine, position);
-  }
-
-  async getInventory(): Promise<BottlePlacements> {
-    const store = await this.ctx.storage.kv.list<string>();
-    if (store) {
-      const list = [...store];
-      return list.reduce((acc, [key, val]) => {
-        acc[key] = JSON.parse(val);
-        return acc;
-      }, {} as BottlePlacements);
+  placeBottle(iWine: string, placements: string) {
+    const items = JSON.parse(placements) as BottlePlacement[];
+    this.ctx.storage.sql.exec("DELETE FROM placements WHERE iWine = ?", iWine);
+    for (const { setupId, shelf, layer, slot } of items) {
+      this.ctx.storage.sql.exec(
+        "INSERT INTO placements (iWine, setup_id, shelf, layer, slot) VALUES (?, ?, ?, ?, ?)",
+        iWine, setupId, shelf, layer, slot,
+      );
     }
-    return {};
+  }
+
+  getInventory(): BottlePlacements {
+    type Row = { iWine: string; setup_id: string; shelf: number; layer: number; slot: number };
+    const rows = [...this.ctx.storage.sql.exec<Row>(
+      "SELECT iWine, setup_id, shelf, layer, slot FROM placements",
+    )];
+    return rows.reduce((acc, { iWine, setup_id, shelf, layer, slot }) => {
+      (acc[iWine] ??= []).push({ setupId: setup_id, shelf, layer, slot });
+      return acc;
+    }, {} as BottlePlacements);
   }
 }
 
