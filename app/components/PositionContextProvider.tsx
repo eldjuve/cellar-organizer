@@ -13,6 +13,7 @@ type PositionContext = {
   inventoryByLocation: { [location: string]: WineItem };
   activeTab: "list" | "storage";
   toggleTab: () => void;
+  activeSetupId: string | null;
 };
 
 const positionContext = React.createContext<PositionContext | undefined>(
@@ -33,10 +34,12 @@ export const PositionContextProvider = ({
   children,
   inventory,
   storedPlacements,
+  activeSetupId = null,
 }: {
   children: React.ReactNode;
   inventory: WineItem[];
   storedPlacements: BottlePlacements;
+  activeSetupId?: string | null;
 }) => {
   const fetcher = useFetcher();
 
@@ -53,10 +56,10 @@ export const PositionContextProvider = ({
 
   const inventoryByLocation = React.useMemo(() => {
     return Object.entries(storage).reduce(
-      (acc, [iWine, positions]) => {
+      (acc, [iWine, placements]) => {
         const wine = inventory.find((w) => w.iWine === iWine);
-        positions.forEach((position) => {
-          acc[position] = wine!;
+        placements.forEach(({ setupId, position }) => {
+          acc[`${setupId}:${position}`] = wine!;
         });
         return acc;
       },
@@ -64,17 +67,20 @@ export const PositionContextProvider = ({
     );
   }, [storage, inventory]);
 
+  const locationKey = (position: string) => `${activeSetupId}:${position}`;
+
   const removeWineFromPosition = (wine: WineItem, position: string) =>
     setStorage((prev) => {
       const updated = { ...prev };
       updated[wine.iWine] = updated[wine.iWine].filter(
-        (loc) => loc !== position,
+        (p) => !(p.setupId === activeSetupId && p.position === position),
       );
       return updated;
     });
 
   const onLocationSelect = (position: string) => {
-    const wineAtPosition = inventoryByLocation[position];
+    if (!activeSetupId) return;
+    const wineAtPosition = inventoryByLocation[locationKey(position)];
     if (wineAtPosition) {
       setSelectedWine((cur) => {
         if (cur?.iWine === wineAtPosition.iWine) {
@@ -87,13 +93,16 @@ export const PositionContextProvider = ({
       (!storage[selectedWine.iWine] ||
         selectedWine.Quantity > storage[selectedWine.iWine].length)
     ) {
-      const locations = [...(storage[selectedWine.iWine] ?? []), position];
+      const placements = [
+        ...(storage[selectedWine.iWine] ?? []),
+        { setupId: activeSetupId, position },
+      ];
       setStorage((prev) => ({
         ...prev,
-        [selectedWine.iWine]: locations,
+        [selectedWine.iWine]: placements,
       }));
       fetcher.submit(
-        { iWine: selectedWine.iWine, locations: JSON.stringify(locations) },
+        { iWine: selectedWine.iWine, locations: JSON.stringify(placements) },
         { method: "POST" },
       );
     } else {
@@ -113,14 +122,15 @@ export const PositionContextProvider = ({
   };
 
   const clearLocation = (position: string) => {
-    const wineAtPosition = inventoryByLocation[position];
+    if (!activeSetupId) return;
+    const wineAtPosition = inventoryByLocation[locationKey(position)];
     if (wineAtPosition) {
       removeWineFromPosition(wineAtPosition, position);
-      const locations = storedPlacements[wineAtPosition.iWine].filter(
-        (loc) => loc !== position,
+      const placements = storedPlacements[wineAtPosition.iWine].filter(
+        (p) => !(p.setupId === activeSetupId && p.position === position),
       );
       fetcher.submit(
-        { iWine: wineAtPosition.iWine, locations: JSON.stringify(locations) },
+        { iWine: wineAtPosition.iWine, locations: JSON.stringify(placements) },
         { method: "POST" },
       );
     }
@@ -139,6 +149,7 @@ export const PositionContextProvider = ({
         inventoryByLocation,
         activeTab,
         toggleTab,
+        activeSetupId,
       }}
     >
       {children}

@@ -20,26 +20,32 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request, params }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
 
   if (!session.has("username") || !session.has("password")) {
-    // Redirect to the login page if they are not signed in.
     return redirect("/login");
   }
 
-  const inventory = await fetchWineData(
-    session.get("username")!,
-    session.get("password")!,
-  );
+  const username = session.get("username")!;
 
-  const userStore = env.BOTTLE_STORE.getByName(session.get("username")!);
+  const setupStore = env.SETUP_STORE.getByName(username);
+  const setupList = setupStore.getSetupList();
+
+  const setupId = (params as { setupId?: string }).setupId;
+
+  if (!setupId) {
+    return setupList.length > 0
+      ? redirect(`/${setupList[0].id}`)
+      : redirect("/setup/new");
+  }
+
+  const inventory = await fetchWineData(username, session.get("password")!);
+
+  const userStore = env.BOTTLE_STORE.getByName(username);
   const locations = await userStore.getInventory();
 
-  const setupStore = env.SETUP_STORE.getByName(session.get("username")!);
-  const setupList = await setupStore.getSetupList();
-
-  return { inventory, locations, setupList };
+  return { inventory, locations, setupList, activeSetupId: setupId };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -55,20 +61,32 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
+  if (!loaderData) return null;
+
   return (
     <main className="p-2 flex flex-col gap-4 h-dvh overflow-hidden">
       <PositionContextProvider
         inventory={loaderData.inventory}
         storedPlacements={loaderData.locations}
+        activeSetupId={loaderData.activeSetupId}
       >
-        <Columns setupList={loaderData.setupList} />
+        <Columns
+          setupList={loaderData.setupList}
+          activeSetupId={loaderData.activeSetupId}
+        />
         <MobileMenu />
       </PositionContextProvider>
     </main>
   );
 }
 
-const Columns = ({ setupList }: { setupList: SetupListItem[] }) => {
+const Columns = ({
+  setupList,
+  activeSetupId,
+}: {
+  setupList: SetupListItem[];
+  activeSetupId: string;
+}) => {
   const { activeTab } = usePositionContext();
   return (
     <div className="flex h-full gap-4 overflow-hidden">
@@ -80,7 +98,7 @@ const Columns = ({ setupList }: { setupList: SetupListItem[] }) => {
       <aside
         className={`flex-1 overflow-hidden flex flex-col gap-2 ${activeTab === "list" ? "max-md:hidden" : ""}`}
       >
-        <SetupSelector setupList={setupList} />
+        <SetupSelector setupList={setupList} activeSetupId={activeSetupId} />
         <StorageView />
       </aside>
     </div>

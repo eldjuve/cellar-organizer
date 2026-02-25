@@ -69,7 +69,8 @@ export type WineItem = {
   UPC: string;
 };
 
-export type BottlePlacements = { [iWine: string]: string[] };
+export type BottlePlacement = { setupId: string; position: string };
+export type BottlePlacements = { [iWine: string]: BottlePlacement[] };
 
 export type WineLocation = WineItem & { positions: string[] };
 

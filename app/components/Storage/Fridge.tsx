@@ -71,10 +71,10 @@ function Layer({
 }
 
 function Slot({ id }: { id: string }) {
-  const { onLocationSelect, inventoryByLocation, selectedWine } =
+  const { onLocationSelect, inventoryByLocation, selectedWine, activeSetupId } =
     usePositionContext();
 
-  const wine = inventoryByLocation[id];
+  const wine = inventoryByLocation[`${activeSetupId}:${id}`];
 
   if (wine) {
     console.log("Wine at", id, "is", wine.Wine);
