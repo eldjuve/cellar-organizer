@@ -9,8 +9,6 @@ import type { ShelfProps, StorageSetup } from "types";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
-  const name = params.name;
-
   const username = session.get("username");
   const password = session.get("password");
 
@@ -18,14 +16,18 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     return redirect("/login");
   }
 
-  if (name === "new") {
-    return { config: [] as StorageSetup };
+  if (params.id === "new") {
+    return { id: null, name: "", config: [] as StorageSetup };
   }
 
-  const userStore = env.SETUP_STORE.getByName(`${username}`);
-  const config = await userStore.getSetup(name!);
+  const userStore = env.SETUP_STORE.getByName(username);
+  const setup = userStore.getSetup(params.id!);
 
-  return { config: config ?? [] };
+  if (!setup) {
+    return redirect("/");
+  }
+
+  return { id: params.id!, name: setup.name, config: setup.config };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -38,30 +40,29 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   const formData = await request.formData();
+  const id = formData.get("id") as string | null;
   const name = formData.get("name") as string;
   const config = JSON.parse(formData.get("config") as string) as StorageSetup;
 
-  const userStore = env.SETUP_STORE.getByName(`${username}`);
-  await userStore.setSetup(name, config);
+  const userStore = env.SETUP_STORE.getByName(username);
+  const savedId = userStore.setSetup(id || null, name, config);
 
-  return redirect(`/setup/${name}`);
+  return redirect(`/setup/${savedId}`);
 }
 
-export default function Component({ loaderData, params }: Route.ComponentProps) {
-  const isNew = params.name === "new";
-
+export default function Component({ loaderData }: Route.ComponentProps) {
   return (
     <div className="min-h-screen flex flex-col items-center gap-4 bg-gradient-to-b from-slate-950 to-slate-900 p-4 text-slate-100">
       <div className="w-full max-w-5xl rounded-xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl shadow-black/40 backdrop-blur">
         <PositionContextProvider storedPlacements={{}} inventory={[]}>
-          <SetupFridge storedConfig={loaderData.config} initialName={isNew ? "" : params.name!} />
+          <SetupFridge storedConfig={loaderData.config} initialName={loaderData.name} initialId={loaderData.id} />
         </PositionContextProvider>
       </div>
     </div>
   );
 }
 
-export function SetupFridge({ storedConfig, initialName }: { storedConfig: StorageSetup; initialName: string }) {
+export function SetupFridge({ storedConfig, initialName, initialId }: { storedConfig: StorageSetup; initialName: string; initialId: string | null }) {
   const [config, setConfig] = useState(storedConfig);
   const [name, setName] = useState(initialName);
   const fetcher = useFetcher();
@@ -94,7 +95,7 @@ export function SetupFridge({ storedConfig, initialName }: { storedConfig: Stora
 
   const handleSave = () => {
     fetcher.submit(
-      { name, config: JSON.stringify(config) },
+      { id: initialId ?? "", name, config: JSON.stringify(config) },
       { method: "post" },
     );
   };

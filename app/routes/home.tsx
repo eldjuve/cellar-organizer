@@ -11,6 +11,7 @@ import { getSession } from "~/sessions.server";
 import { redirect } from "react-router";
 import { StorageView } from "~/components/Storage/Storage";
 import { SetupSelector } from "~/components/SetupSelector";
+import type { SetupListItem } from "types";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -67,7 +68,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   );
 }
 
-const Columns = ({ setupList }: { setupList: string[] }) => {
+const Columns = ({ setupList }: { setupList: SetupListItem[] }) => {
   const { activeTab } = usePositionContext();
   return (
     <div className="flex h-full gap-4 overflow-hidden">

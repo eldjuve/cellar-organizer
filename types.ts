@@ -81,7 +81,7 @@ export type ShelfProps = {
 
 export type StorageSetup = ShelfProps[];
 
-export type StorageSetupOverview = { [name: string]: StorageSetup };
+export type SetupListItem = { id: string; name: string };
 
 export interface Env {
   SESSION_SECRET: string;

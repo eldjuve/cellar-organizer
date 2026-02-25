@@ -1,10 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { createRequestHandler } from "react-router";
-import type {
-  BottlePlacements,
-  StorageSetup,
-  StorageSetupOverview,
-} from "types";
+import type { BottlePlacements, SetupListItem, StorageSetup } from "types";
 
 declare module "react-router" {
   export interface AppLoadContext {
@@ -53,27 +49,50 @@ export class BottlePlacementStore extends DurableObject<Env> {
 
 export class StorageSetupStore extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
-    // Required, as we are extending the base class.
     super(ctx, env);
+    ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS setups (
+        id   TEXT PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        config TEXT NOT NULL
+      )
+    `);
   }
 
-  async setSetup(name: string, setup: StorageSetup) {
-    this.ctx.storage.put(name, setup);
-  }
-
-  async getSetup(key: string): Promise<StorageSetup | null> {
-    const store = await this.ctx.storage.get(key);
-    if (store) {
-      return store as StorageSetup;
+  setSetup(id: string | null, name: string, setup: StorageSetup): string {
+    if (id) {
+      this.ctx.storage.sql.exec(
+        "UPDATE setups SET name = ?, config = ? WHERE id = ?",
+        name, JSON.stringify(setup), id,
+      );
+      return id;
+    } else {
+      const newId = crypto.randomUUID();
+      this.ctx.storage.sql.exec(
+        "INSERT INTO setups (id, name, config) VALUES (?, ?, ?)",
+        newId, name, JSON.stringify(setup),
+      );
+      return newId;
     }
-    return null;
   }
 
-  async getSetupList(): Promise<string[]> {
-    const store = await this.ctx.storage.list<StorageSetup>();
-    if (store) {
-      return [...store.keys()];
-    }
-    return [];
+  getSetup(id: string): { name: string; config: StorageSetup } | null {
+    const rows = [
+      ...this.ctx.storage.sql.exec<{ name: string; config: string }>(
+        "SELECT name, config FROM setups WHERE id = ?",
+        id,
+      ),
+    ];
+    return rows.length
+      ? { name: rows[0].name, config: JSON.parse(rows[0].config) }
+      : null;
+  }
+
+  getSetupList(): SetupListItem[] {
+    return [
+      ...this.ctx.storage.sql.exec<SetupListItem>(
+        "SELECT id, name FROM setups ORDER BY name",
+      ),
+    ];
   }
 }
