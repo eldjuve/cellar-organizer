@@ -81,16 +81,12 @@ function Slot({ shelf, layer, slot }: { shelf: number; layer: number; slot: numb
     onSlotSelect(shelf, layer, slot);
   };
 
-  const colorVariants: { [key in "Red" | "White" | "Rosé"]: string } = {
-    Red: "bg-red-400",
-    White: "bg-yellow-200",
-    Rosé: "bg-pink-300",
-  };
-
   return (
     <div className="slot">
       <button
-        className={`${wine ? colorVariants[wine.Color] : "bg-white"} ${selectedWine && selectedWine.iWine === wine?.iWine ? "border-4 border-blue-400" : ""}`}
+        className="slot-button"
+        data-color={wine?.Color}
+        data-selected={selectedWine?.iWine === wine?.iWine || undefined}
         onClick={handleSelect}
       ></button>
     </div>
