@@ -2,7 +2,7 @@ import { PositionContextProvider } from "~/components/PositionContextProvider";
 import { Shelf } from "~/components/Storage/Fridge";
 import { getSession } from "~/sessions.server";
 import type { Route } from "./+types/setup";
-import { redirect, useFetcher } from "react-router";
+import { Form, redirect } from "react-router";
 import { useState } from "react";
 import { env } from "workers/store";
 import type { ShelfProps, StorageSetup } from "types";
@@ -65,7 +65,6 @@ export default function Component({ loaderData }: Route.ComponentProps) {
 export function SetupFridge({ storedConfig, initialName, initialId }: { storedConfig: StorageSetup; initialName: string; initialId: string | null }) {
   const [config, setConfig] = useState(storedConfig);
   const [name, setName] = useState(initialName);
-  const fetcher = useFetcher();
 
   const addShelf = () => {
     setConfig((cur) => {
@@ -75,57 +74,43 @@ export function SetupFridge({ storedConfig, initialName, initialId }: { storedCo
   };
 
   const updateShelf = (shelf: number, update: ShelfProps) => {
-    const maxLayersValue = maxLayers(update);
-
     setConfig((cur) =>
-      cur.map((config, index) => {
-        if (index === shelf) {
-          // Maybe an idea, not sure
-          // if (config.layers && config.layers > maxLayersValue) {
-          //   return{ ...update, layers: maxLayersValue };
-          // }
-          return update;
-        }
-        return config;
-      }),
+      cur.map((config, index) => (index === shelf ? update : config)),
     );
   };
 
-  const maxCapasity = Math.max(...config.map((shelf) => shelf.capacity));
-
-  const handleSave = () => {
-    fetcher.submit(
-      { id: initialId ?? "", name, config: JSON.stringify(config) },
-      { method: "post" },
-    );
-  };
+  const maxCapacity = Math.max(...config.map((shelf) => shelf.capacity));
 
   return (
-    <div className="flex flex-col gap-4">
+    <Form method="post" className="flex flex-col gap-4">
+      <input type="hidden" name="id" value={initialId ?? ""} />
+      <input type="hidden" name="config" value={JSON.stringify(config)} />
       <div className="flex items-center gap-2">
         <input
           type="text"
+          name="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Setup name"
           className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition"
         />
-        <button className="button-primary" onClick={handleSave}>Save</button>
+        <button type="submit" className="button-primary">Save</button>
       </div>
       <ul className="flex flex-col justify-center overflow-x-auto">
         {config.map((layers, index) => (
           <li key={index} className="p-2 border border-slate-700">
-            <ShelfOptions id={index} options={layers} maxCapasity={maxCapasity} onChange={updateShelf} />
+            <ShelfOptions id={index} options={layers} maxCapacity={maxCapacity} onChange={updateShelf} />
           </li>
         ))}
       </ul>
       <button
+        type="button"
         className="rounded-lg border border-slate-700 p-2"
         onClick={addShelf}
       >
         New shelf
       </button>
-    </div>
+    </Form>
   );
 }
 
@@ -133,21 +118,19 @@ function ShelfOptions({
   id,
   options,
   onChange,
-  maxCapasity
+  maxCapacity
 }: {
   id: number;
   options: ShelfProps;
-  maxCapasity: number;
+  maxCapacity: number;
   onChange: (shelf: number, options: ShelfProps) => void;
 }) {
-
-
   return (
     <>
       <div className="flex gap-4 overflow-hidden">
         <div className="grow-1 overflow-hidden">
           <div className="flex flex-col">
-            <Shelf maxCapacity={maxCapasity} options={options} shelfId={id} />
+            <Shelf maxCapacity={maxCapacity} options={options} shelfId={id} />
             <div className="flex gap-8 justify-center items-center">
               <label>
                 Bottles:{" "}

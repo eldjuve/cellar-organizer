@@ -94,7 +94,7 @@ export const PositionContextProvider = ({
     } else if (
       selectedWine &&
       (!storage[selectedWine.iWine] ||
-        selectedWine.Quantity > storage[selectedWine.iWine].length)
+        Number(selectedWine.Quantity) > storage[selectedWine.iWine].length)
     ) {
       setStorage((prev) => ({
         ...prev,

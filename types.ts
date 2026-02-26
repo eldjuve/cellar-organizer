@@ -1,14 +1,14 @@
 export type WineItem = {
   iWine: string;
   WineBarcode: string;
-  Quantity: number;
+  Quantity: string;
   Pending: string;
   Size: string;
   Price: string;
   Valuation: string;
   MyValue: string;
-  WBValue?: string | null;
-  CTValue?: string | null;
+  WBValue?: string;
+  CTValue?: string;
   MenuPrice: string;
   Currency: string;
   Vintage: string;
@@ -27,39 +27,37 @@ export type WineItem = {
   MasterVarietal: string;
   Designation: string;
   Vineyard: string;
-  Ratings?: {
-    WA?: string;
-    WS?: string;
-    IWC?: string;
-    BH?: string;
-    AG?: string;
-    WE?: string;
-    JR?: string;
-    RH?: string;
-    JG?: string;
-    GV?: string;
-    JK?: string;
-    LD?: string;
-    CW?: string;
-    WFW?: string;
-    PR?: string;
-    SJ?: string;
-    WD?: string;
-    RR?: string;
-    JH?: string;
-    MFW?: string;
-    WWR?: string;
-    IWR?: string;
-    CHG?: string;
-    TT?: string;
-    TWF?: string;
-    DR?: string;
-    FP?: string;
-    JM?: string;
-    PG?: string;
-    WAL?: string;
-    JS?: string;
-  };
+  WA?: string;
+  WS?: string;
+  IWC?: string;
+  BH?: string;
+  AG?: string;
+  WE?: string;
+  JR?: string;
+  RH?: string;
+  JG?: string;
+  GV?: string;
+  JK?: string;
+  LD?: string;
+  CW?: string;
+  WFW?: string;
+  PR?: string;
+  SJ?: string;
+  WD?: string;
+  RR?: string;
+  JH?: string;
+  MFW?: string;
+  WWR?: string;
+  IWR?: string;
+  CHG?: string;
+  TT?: string;
+  TWF?: string;
+  DR?: string;
+  FP?: string;
+  JM?: string;
+  PG?: string;
+  WAL?: string;
+  JS?: string;
   CT: string;
   CNotes: string;
   MY?: string;
@@ -71,8 +69,6 @@ export type WineItem = {
 
 export type BottlePlacement = { setupId: string; shelf: number; layer: number; slot: number };
 export type BottlePlacements = { [iWine: string]: BottlePlacement[] };
-
-export type WineLocation = WineItem & { positions: string[] };
 
 export type ShelfProps = {
   capacity: number;

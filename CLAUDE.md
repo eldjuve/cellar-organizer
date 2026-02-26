@@ -32,10 +32,10 @@ Authentication uses secure HTTP-only cookie sessions (24h expiry). A demo accoun
 
 ### Persistent Storage (Cloudflare Durable Objects)
 
-Two Durable Object classes in `workers/app.ts`:
+Both Durable Object classes in `workers/app.ts` use SQLite (`ctx.storage.sql`):
 
-- **`BottlePlacementStore`** — maps `iWine` IDs to shelf positions (`placeBottle`, `getInventory`)
-- **`StorageSetupStore`** — stores named shelf/rack configurations per user (`setSetup`, `getSetup`, `getSetupList`)
+- **`BottlePlacementStore`** — stores placements as rows with typed `(iWine, setup_id, shelf, layer, slot)` fields. Methods: `addPlacement`, `removePlacement`, `getInventory`
+- **`StorageSetupStore`** — stores named shelf/rack configs with a UUID `id`. Methods: `setSetup` (upsert, returns id), `getSetup`, `getSetupList`
 
 Bindings are defined in `wrangler.jsonc` as `BOTTLE_STORE` and `SETUP_STORE`. After changing Durable Object schemas, add a migration entry in `wrangler.jsonc`.
 
@@ -45,26 +45,28 @@ Routes are defined in `app/routes.ts` and map to files under `app/routes/`:
 
 | Route | File | Purpose |
 |-------|------|---------|
-| `/` | `home.tsx` | Main organizer (wine list + storage grid) |
+| `/` | `home.tsx` | Setup list / redirect to active setup |
+| `/:setupId` | `storage.tsx` | Main organizer (wine list + storage grid) |
 | `/login` | `login.tsx` | CellarTracker auth |
-| `/setup` | `setup/index.tsx` | List storage configurations |
-| `/setup/:name` | `setup/setup.tsx` | Configure a storage layout |
+| `/setup/:id` | `setup/setup.tsx` | Configure a storage layout |
 
 ### State Management
 
 `PositionContextProvider` (`app/components/PositionContextProvider.tsx`) is the central client-side state:
-- Tracks `selectedWine`, `selectedPosition`, `storage` (placements), `activeTab`
-- Uses React Router's `useFetcher` to submit bottle placements without full navigation
-- Derives `inventoryByLocation` (location → wine) via `useMemo`
+- Tracks `selectedWine`, `selectedPosition`, `storage` (placements), `activeTab`, `activeSetupId`
+- Uses React Router's `useFetcher` to POST `add`/`remove` placement actions without full navigation
+- Derives `inventoryByLocation` (`InventoryMatrix`: `setupId → shelf → layer → slot → WineItem`) via `useMemo`
 
 ### Core Types (`types.ts`)
 
 - `WineItem` — full wine record from CellarTracker
-- `BottlePlacements` — `{ [iWine]: string[] }` mapping wines to positions
+- `BottlePlacement` — `{ setupId: string; shelf: number; layer: number; slot: number }`
+- `BottlePlacements` — `{ [iWine: string]: BottlePlacement[] }` mapping wines to typed positions
 - `StorageSetup` — `ShelfProps[]` array defining a rack's shelf configuration
 - `ShelfProps` — `{ capacity, innerRow, layers? }` for a single shelf
-- `Env` — Cloudflare env bindings (`SESSION_SECRET`, Durable Object namespaces)
+- `SetupListItem` — `{ id: string; name: string }` for listing setups
+- `Env` — Cloudflare env bindings (`SESSION_SECRET`)
 
 ### Fridge/Shelf Visualization
 
-`app/components/Storage/Fridge.tsx` renders a grid of shelf cells. Positions use a string format encoding shelf and slot. The `innerRow` concept in `ShelfProps` represents a front/back split within a single shelf slot.
+`app/components/Storage/Fridge.tsx` renders a grid of shelf cells. Positions are encoded as `{ shelf, layer, slot }` integers (previously a string format). The `innerRow` concept in `ShelfProps` represents a front/back split within a single shelf slot.
