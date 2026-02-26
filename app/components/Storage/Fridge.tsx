@@ -75,7 +75,7 @@ function Slot({ shelf, layer, slot }: { shelf: number; layer: number; slot: numb
   const { onSlotSelect, inventoryByLocation, selectedWine, activeSetupId } =
     usePositionContext();
 
-  const wine = inventoryByLocation[`${activeSetupId}:${shelf}.${layer}.${slot}`];
+  const wine = inventoryByLocation[activeSetupId ?? ""]?.[shelf]?.[layer]?.[slot];
 
   const handleSelect = () => {
     onSlotSelect(shelf, layer, slot);

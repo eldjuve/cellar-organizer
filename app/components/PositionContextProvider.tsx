@@ -2,6 +2,16 @@ import React, { useEffect } from "react";
 import { useFetcher } from "react-router";
 import type { BottlePlacement, BottlePlacements, WineItem } from "types";
 
+type InventoryMatrix = {
+  [setupId: string]: {
+    [shelf: number]: {
+      [layer: number]: {
+        [slot: number]: WineItem;
+      };
+    };
+  };
+};
+
 type PositionContext = {
   selectedWine: WineItem | undefined;
   setSelectedWine: (wine: WineItem) => void;
@@ -11,7 +21,7 @@ type PositionContext = {
   clearLocation: (placement: BottlePlacement) => void;
   inventory: WineItem[];
   storage: BottlePlacements;
-  inventoryByLocation: { [location: string]: WineItem };
+  inventoryByLocation: InventoryMatrix;
   activeTab: "list" | "storage";
   toggleTab: () => void;
   activeSetupId: string | null;
@@ -31,8 +41,6 @@ export const usePositionContext = () => {
   return context;
 };
 
-const placementKey = (setupId: string, shelf: number, layer: number, slot: number) =>
-  `${setupId}:${shelf}.${layer}.${slot}`;
 
 export const PositionContextProvider = ({
   children,
@@ -57,16 +65,14 @@ export const PositionContextProvider = ({
   }, [storedPlacements]);
 
   const inventoryByLocation = React.useMemo(() => {
-    return Object.entries(storage).reduce(
-      (acc, [iWine, placements]) => {
-        const wine = inventory.find((w) => w.iWine === iWine);
-        placements.forEach(({ setupId, shelf, layer, slot }) => {
-          acc[placementKey(setupId, shelf, layer, slot)] = wine!;
-        });
-        return acc;
-      },
-      {} as { [location: string]: WineItem },
-    );
+    return Object.entries(storage).reduce((acc, [iWine, placements]) => {
+      const wine = inventory.find((w) => w.iWine === iWine);
+      placements.forEach(({ setupId, shelf, layer, slot }) => {
+        ((acc[setupId] ??= {})[shelf] ??= {})[layer] ??= {};
+        acc[setupId][shelf][layer][slot] = wine!;
+      });
+      return acc;
+    }, {} as InventoryMatrix);
   }, [storage, inventory]);
 
   const removeFromStorage = (wine: WineItem, placement: BottlePlacement) =>
@@ -80,8 +86,7 @@ export const PositionContextProvider = ({
 
   const onSlotSelect = (shelf: number, layer: number, slot: number) => {
     if (!activeSetupId) return;
-    const key = placementKey(activeSetupId, shelf, layer, slot);
-    const wineAtPosition = inventoryByLocation[key];
+    const wineAtPosition = inventoryByLocation[activeSetupId]?.[shelf]?.[layer]?.[slot];
     if (wineAtPosition) {
       setSelectedWine((cur) => {
         if (cur?.iWine === wineAtPosition.iWine) {
@@ -124,7 +129,7 @@ export const PositionContextProvider = ({
 
   const clearLocation = (placement: BottlePlacement) => {
     const { setupId, shelf, layer, slot } = placement;
-    const wineAtPosition = inventoryByLocation[placementKey(setupId, shelf, layer, slot)];
+    const wineAtPosition = inventoryByLocation[setupId]?.[shelf]?.[layer]?.[slot];
     if (wineAtPosition) {
       removeFromStorage(wineAtPosition, placement);
       fetcher.submit(
