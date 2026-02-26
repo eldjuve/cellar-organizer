@@ -17,7 +17,6 @@ type PositionContext = {
   setSelectedWine: (wine: WineItem) => void;
   selectedPosition: BottlePlacement | undefined;
   onSlotSelect: (shelf: number, layer: number, slot: number) => void;
-  onDump: () => void;
   clearLocation: (placement: BottlePlacement) => void;
   inventory: WineItem[];
   storage: BottlePlacements;
@@ -88,12 +87,10 @@ export const PositionContextProvider = ({
     if (!activeSetupId) return;
     const wineAtPosition = inventoryByLocation[activeSetupId]?.[shelf]?.[layer]?.[slot];
     if (wineAtPosition) {
-      setSelectedWine((cur) => {
-        if (cur?.iWine === wineAtPosition.iWine) {
-          removeFromStorage(cur, { setupId: activeSetupId, shelf, layer, slot });
-        }
-        return wineAtPosition;
-      });
+      if (selectedWine?.iWine === wineAtPosition.iWine) {
+        clearLocation({ setupId: activeSetupId, shelf, layer, slot });
+      }
+      setSelectedWine(wineAtPosition);
     } else if (
       selectedWine &&
       (!storage[selectedWine.iWine] ||
@@ -113,9 +110,6 @@ export const PositionContextProvider = ({
     }
   };
 
-  const onDump = () => {
-    // off-shelf placement — handled separately from shelf slots
-  };
 
   useEffect(() => {
     if (selectedWine) {
@@ -148,7 +142,6 @@ export const PositionContextProvider = ({
         setSelectedWine,
         selectedPosition,
         onSlotSelect,
-        onDump,
         clearLocation,
         inventoryByLocation,
         activeTab,
