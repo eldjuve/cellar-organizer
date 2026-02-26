@@ -21,7 +21,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   }
 
   const userStore = env.SETUP_STORE.getByName(username);
-  const setup = userStore.getSetup(params.id!);
+  const setup = await userStore.getSetup(params.id!);
 
   if (!setup) {
     return redirect("/");

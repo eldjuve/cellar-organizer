@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { createRequestHandler } from "react-router";
-import type { BottlePlacement, BottlePlacements, SetupListItem, StorageSetup } from "types";
+import type { BottlePlacements, SetupListItem, StorageSetup } from "types";
 
 declare module "react-router" {
   export interface AppLoadContext {
@@ -39,15 +39,18 @@ export class BottlePlacementStore extends DurableObject<Env> {
     `);
   }
 
-  placeBottle(iWine: string, placements: string) {
-    const items = JSON.parse(placements) as BottlePlacement[];
-    this.ctx.storage.sql.exec("DELETE FROM placements WHERE iWine = ?", iWine);
-    for (const { setupId, shelf, layer, slot } of items) {
-      this.ctx.storage.sql.exec(
-        "INSERT INTO placements (iWine, setup_id, shelf, layer, slot) VALUES (?, ?, ?, ?, ?)",
-        iWine, setupId, shelf, layer, slot,
-      );
-    }
+  addPlacement(iWine: string, setupId: string, shelf: number, layer: number, slot: number) {
+    this.ctx.storage.sql.exec(
+      "INSERT OR IGNORE INTO placements (iWine, setup_id, shelf, layer, slot) VALUES (?, ?, ?, ?, ?)",
+      iWine, setupId, shelf, layer, slot,
+    );
+  }
+
+  removePlacement(iWine: string, setupId: string, shelf: number, layer: number, slot: number) {
+    this.ctx.storage.sql.exec(
+      "DELETE FROM placements WHERE iWine = ? AND setup_id = ? AND shelf = ? AND layer = ? AND slot = ?",
+      iWine, setupId, shelf, layer, slot,
+    );
   }
 
   getInventory(): BottlePlacements {

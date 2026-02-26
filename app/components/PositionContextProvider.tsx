@@ -94,13 +94,12 @@ export const PositionContextProvider = ({
       (!storage[selectedWine.iWine] ||
         selectedWine.Quantity > storage[selectedWine.iWine].length)
     ) {
-      const placements = [
-        ...(storage[selectedWine.iWine] ?? []),
-        { setupId: activeSetupId, shelf, layer, slot },
-      ];
-      setStorage((prev) => ({ ...prev, [selectedWine.iWine]: placements }));
+      setStorage((prev) => ({
+        ...prev,
+        [selectedWine.iWine]: [...(prev[selectedWine.iWine] ?? []), { setupId: activeSetupId, shelf, layer, slot }],
+      }));
       fetcher.submit(
-        { iWine: selectedWine.iWine, locations: JSON.stringify(placements) },
+        { intent: "add", iWine: selectedWine.iWine, setupId: activeSetupId, shelf, layer, slot },
         { method: "POST" },
       );
     } else {
@@ -128,11 +127,8 @@ export const PositionContextProvider = ({
     const wineAtPosition = inventoryByLocation[placementKey(setupId, shelf, layer, slot)];
     if (wineAtPosition) {
       removeFromStorage(wineAtPosition, placement);
-      const placements = storedPlacements[wineAtPosition.iWine].filter(
-        (p) => !(p.setupId === setupId && p.shelf === shelf && p.layer === layer && p.slot === slot),
-      );
       fetcher.submit(
-        { iWine: wineAtPosition.iWine, locations: JSON.stringify(placements) },
+        { intent: "remove", iWine: wineAtPosition.iWine, setupId, shelf, layer, slot },
         { method: "POST" },
       );
     }

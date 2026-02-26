@@ -46,9 +46,18 @@ export async function action({ request }: Route.ActionArgs) {
   const userStore = env.BOTTLE_STORE.getByName(session.get("username")!);
 
   const formData = await request.formData();
-  const wineId = formData.get("iWine") as string;
-  const locations = formData.get("locations") as string;
-  await userStore.placeBottle(wineId, locations);
+  const intent = formData.get("intent") as "add" | "remove";
+  const iWine = formData.get("iWine") as string;
+  const setupId = formData.get("setupId") as string;
+  const shelf = Number(formData.get("shelf"));
+  const layer = Number(formData.get("layer"));
+  const slot = Number(formData.get("slot"));
+
+  if (intent === "add") {
+    userStore.addPlacement(iWine, setupId, shelf, layer, slot);
+  } else {
+    userStore.removePlacement(iWine, setupId, shelf, layer, slot);
+  }
   return null;
 }
 
