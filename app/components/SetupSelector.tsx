@@ -17,7 +17,7 @@ export const SetupSelector = ({
           <select
             value={activeSetupId}
             onChange={(e) => navigate(`/${e.target.value}`)}
-            className="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-slate-100"
+            className="rounded border border-slate-700 bg-slate-800 px-2 py-2 text-slate-100"
           >
             {setupList.map(({ id, name }) => (
               <option key={id} value={id}>{name}</option>
