@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { createRequestHandler } from "react-router";
-import type { BottlePlacements, SetupListItem, StorageSetup } from "types";
+import type { BottlesClientMessage, BottlePlacements, SetupsClientMessage, SetupListItem, StorageSetup } from "types";
 import { getSession } from "../app/sessions.server";
 
 declare module "react-router" {
@@ -97,7 +97,7 @@ export class BottlePlacementStore extends DurableObject<Env> {
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    let parsed: Record<string, unknown>;
+    let parsed: BottlesClientMessage;
     try {
       parsed = JSON.parse(typeof message === "string" ? message : new TextDecoder().decode(message));
     } catch {
@@ -109,29 +109,17 @@ export class BottlePlacementStore extends DurableObject<Env> {
         ws.send(JSON.stringify({ type: "inventory", data: this.getInventory() }));
         break;
       case "addPlacement":
-        this.addPlacement(
-          parsed.iWine as string,
-          parsed.setupId as string,
-          parsed.shelf as number,
-          parsed.layer as number,
-          parsed.slot as number,
-        );
+        this.addPlacement(parsed.iWine, parsed.setupId, parsed.shelf, parsed.layer, parsed.slot);
         this.broadcast(ws, JSON.stringify({ type: "placementAdded", iWine: parsed.iWine, setupId: parsed.setupId, shelf: parsed.shelf, layer: parsed.layer, slot: parsed.slot }));
         ws.send(JSON.stringify({ type: "ack" }));
         break;
       case "removePlacement":
-        this.removePlacement(
-          parsed.iWine as string,
-          parsed.setupId as string,
-          parsed.shelf as number,
-          parsed.layer as number,
-          parsed.slot as number,
-        );
+        this.removePlacement(parsed.iWine, parsed.setupId, parsed.shelf, parsed.layer, parsed.slot);
         this.broadcast(ws, JSON.stringify({ type: "placementRemoved", iWine: parsed.iWine, setupId: parsed.setupId, shelf: parsed.shelf, layer: parsed.layer, slot: parsed.slot }));
         ws.send(JSON.stringify({ type: "ack" }));
         break;
       default:
-        ws.send(JSON.stringify({ type: "error", message: `Unknown message type: ${parsed.type}` }));
+        ws.send(JSON.stringify({ type: "error", message: `Unknown message type: ${(parsed as { type: unknown }).type}` }));
     }
   }
 
@@ -204,7 +192,7 @@ export class StorageSetupStore extends DurableObject<Env> {
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    let parsed: Record<string, unknown>;
+    let parsed: SetupsClientMessage;
     try {
       parsed = JSON.parse(typeof message === "string" ? message : new TextDecoder().decode(message));
     } catch {
@@ -216,20 +204,16 @@ export class StorageSetupStore extends DurableObject<Env> {
         ws.send(JSON.stringify({ type: "setupList", data: this.getSetupList() }));
         break;
       case "getSetup":
-        ws.send(JSON.stringify({ type: "setup", data: this.getSetup(parsed.id as string) }));
+        ws.send(JSON.stringify({ type: "setup", data: this.getSetup(parsed.id) }));
         break;
       case "setSetup":
         ws.send(JSON.stringify({
           type: "savedSetup",
-          id: this.setSetup(
-            parsed.id as string | null,
-            parsed.name as string,
-            parsed.config as StorageSetup,
-          ),
+          id: this.setSetup(parsed.id, parsed.name, parsed.config),
         }));
         break;
       default:
-        ws.send(JSON.stringify({ type: "error", message: `Unknown message type: ${parsed.type}` }));
+        ws.send(JSON.stringify({ type: "error", message: `Unknown message type: ${(parsed as { type: unknown }).type}` }));
     }
   }
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import type { BottlePlacement, BottlePlacements, WineItem } from "types";
+import type { BottlePlacement, BottlePlacements, BottlesClientMessage, BottlesServerMessage, WineItem } from "types";
 
 type InventoryMatrix = {
   [setupId: string]: {
@@ -64,7 +64,7 @@ export const PositionContextProvider = ({
       wsRef.current = ws;
       ws.onmessage = (event) => {
         try {
-          const msg = JSON.parse(event.data);
+          const msg: BottlesServerMessage = JSON.parse(event.data);
           if (msg.type === "placementAdded") {
             setStorage((prev) => ({
               ...prev,
@@ -88,7 +88,7 @@ export const PositionContextProvider = ({
     return () => { closed = true; ws?.close(); };
   }, []);
 
-  const send = (msg: object) => {
+  const send = (msg: BottlesClientMessage) => {
     const ws = wsRef.current;
     if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
   };
