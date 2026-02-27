@@ -29,6 +29,8 @@ body {
   align-items: center;
   grid-template-rows: auto;
   overflow-x: auto;
+  grid-template-columns: repeat(var(--capacity), 1fr);
+  container-type: inline-size;
 }
 
 .row {
@@ -56,6 +58,7 @@ body {
   border: 1px solid #000;
   border-radius: calc(infinity * 1px);
   width: 100%;
+  max-width: calc(100cqw / var(--max-capacity));
   @apply aspect-square;
 
   &[data-color="Red"]   { background-color: theme(colors.red.400); }

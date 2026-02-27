@@ -11,7 +11,7 @@ import { getSession } from "~/sessions.server";
 import { redirect } from "react-router";
 import { StorageView } from "~/components/Storage/Storage";
 import { SetupSelector } from "~/components/SetupSelector";
-import type { SetupListItem } from "types";
+import type { SetupListItem, StorageSetup } from "types";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -30,14 +30,17 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const username = session.get("username")!;
 
   const setupStore = env.SETUP_STORE.getByName(username);
-  const setupList = await setupStore.getSetupList();
+  const [setupList, setup] = await Promise.all([
+    setupStore.getSetupList(),
+    setupStore.getSetup(params.setupId!),
+  ]);
 
   const inventory = await fetchWineData(username, session.get("password")!);
 
   const userStore = env.BOTTLE_STORE.getByName(username);
   const locations = await userStore.getInventory();
 
-  return { inventory, locations, setupList, activeSetupId: params.setupId };
+  return { inventory, locations, setupList, activeSetupId: params.setupId, setupConfig: setup?.config ?? null };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -72,6 +75,7 @@ export default function Storage({ loaderData }: Route.ComponentProps) {
         <Columns
           setupList={loaderData.setupList}
           activeSetupId={loaderData.activeSetupId}
+          setupConfig={loaderData.setupConfig}
         />
         <MobileMenu />
       </PositionContextProvider>
@@ -82,9 +86,11 @@ export default function Storage({ loaderData }: Route.ComponentProps) {
 const Columns = ({
   setupList,
   activeSetupId,
+  setupConfig,
 }: {
   setupList: SetupListItem[];
   activeSetupId: string;
+  setupConfig: StorageSetup | null;
 }) => {
   const { activeTab } = usePositionContext();
   return (
@@ -98,7 +104,7 @@ const Columns = ({
         className={`flex-1 overflow-hidden flex flex-col gap-2 ${activeTab === "list" ? "max-md:hidden" : ""}`}
       >
         <SetupSelector setupList={setupList} activeSetupId={activeSetupId} />
-        <StorageView />
+        <StorageView config={setupConfig ?? undefined} />
       </aside>
     </div>
   );

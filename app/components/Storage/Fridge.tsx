@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { ShelfProps } from "types";
 import { usePositionContext } from "../PositionContextProvider";
 
@@ -17,18 +18,21 @@ export function Fridge({ config }: { config?: ShelfProps[] }) {
   const maxCapacity = Math.max(...shelfs.map((shelf) => shelf.capacity));
 
   return (
-    <ul className="flex flex-col justify-center p-4 overflow-x-auto">
+    <ul
+      className="flex flex-col justify-center p-4 overflow-x-auto"
+      style={{ '--max-capacity': maxCapacity } as CSSProperties}
+    >
       {shelfs.map((shelf, index) => (
-        <Shelf options={shelf} shelfId={index + 1} key={index} maxCapacity={maxCapacity} />
+        <Shelf options={shelf} shelfId={index + 1} key={index} />
       ))}
     </ul>
   );
 }
 
-export function Shelf({ options, shelfId, maxCapacity }: { options: ShelfProps; shelfId: number; maxCapacity: number }) {
+export function Shelf({ options, shelfId }: { options: ShelfProps; shelfId: number }) {
   return (
     <li className="shelf-container">
-      <div className="shelf" style={{ gridTemplateColumns: `repeat(${maxCapacity},minmax(1rem,1fr))` }}>
+      <div className="shelf" style={{ '--capacity': options.capacity } as CSSProperties}>
         {Array.from({ length: options.layers ?? 1 }).map((_, index) => (
           <Layer
             {...options}
@@ -86,15 +90,9 @@ function Slot({ shelf, layer, slot }: { shelf: number; layer: number; slot: numb
       <button
         className="slot-button"
         data-color={wine?.Color}
-        data-selected={selectedWine?.iWine === wine?.iWine || undefined}
+        data-selected={(selectedWine !== undefined && selectedWine.iWine === wine?.iWine) || undefined}
         onClick={handleSelect}
       ></button>
     </div>
-  );
-}
-
-function BlindSlot() {
-  return (
-    <div className="slot border-2 border-transparent grow-2 aspect-square"></div>
   );
 }

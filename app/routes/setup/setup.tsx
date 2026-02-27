@@ -3,7 +3,7 @@ import { Shelf } from "~/components/Storage/Fridge";
 import { getSession } from "~/sessions.server";
 import type { Route } from "./+types/setup";
 import { Form, redirect } from "react-router";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { env } from "workers/store";
 import type { ShelfProps, StorageSetup } from "types";
 
@@ -96,10 +96,10 @@ export function SetupFridge({ storedConfig, initialName, initialId }: { storedCo
         />
         <button type="submit" className="button-primary">Save</button>
       </div>
-      <ul className="flex flex-col justify-center overflow-x-auto">
+      <ul className="flex flex-col justify-center overflow-x-auto" style={{ '--max-capacity': maxCapacity } as CSSProperties}>
         {config.map((layers, index) => (
           <li key={index} className="p-2 border border-slate-700">
-            <ShelfOptions id={index} options={layers} maxCapacity={maxCapacity} onChange={updateShelf} />
+            <ShelfOptions id={index} options={layers} onChange={updateShelf} />
           </li>
         ))}
       </ul>
@@ -118,11 +118,9 @@ function ShelfOptions({
   id,
   options,
   onChange,
-  maxCapacity
 }: {
   id: number;
   options: ShelfProps;
-  maxCapacity: number;
   onChange: (shelf: number, options: ShelfProps) => void;
 }) {
   return (
@@ -130,7 +128,7 @@ function ShelfOptions({
       <div className="flex gap-4 overflow-hidden">
         <div className="grow-1 overflow-hidden">
           <div className="flex flex-col">
-            <Shelf maxCapacity={maxCapacity} options={options} shelfId={id} />
+            <Shelf options={options} shelfId={id} />
             <div className="flex gap-8 justify-center items-center">
               <label>
                 Bottles:{" "}
