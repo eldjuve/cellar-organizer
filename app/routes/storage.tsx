@@ -43,26 +43,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   return { inventory, locations, setupList, activeSetupId: params.setupId, setupConfig: setup?.config ?? null };
 }
 
-export async function action({ request }: Route.ActionArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
-
-  const userStore = env.BOTTLE_STORE.getByName(session.get("username")!);
-
-  const formData = await request.formData();
-  const intent = formData.get("intent") as "add" | "remove";
-  const iWine = formData.get("iWine") as string;
-  const setupId = formData.get("setupId") as string;
-  const shelf = Number(formData.get("shelf"));
-  const layer = Number(formData.get("layer"));
-  const slot = Number(formData.get("slot"));
-
-  if (intent === "add") {
-    userStore.addPlacement(iWine, setupId, shelf, layer, slot);
-  } else {
-    userStore.removePlacement(iWine, setupId, shelf, layer, slot);
-  }
-  return null;
-}
 
 export default function Storage({ loaderData }: Route.ComponentProps) {
   return (

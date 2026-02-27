@@ -1,5 +1,4 @@
-import React, { useEffect } from "react";
-import { useFetcher } from "react-router";
+import React, { useEffect, useRef } from "react";
 import type { BottlePlacement, BottlePlacements, WineItem } from "types";
 
 type InventoryMatrix = {
@@ -52,7 +51,47 @@ export const PositionContextProvider = ({
   storedPlacements: BottlePlacements;
   activeSetupId?: string | null;
 }) => {
-  const fetcher = useFetcher();
+  const wsRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const url = `${protocol}//${window.location.host}/ws/bottles`;
+    let closed = false;
+    let ws: WebSocket;
+
+    const connect = () => {
+      ws = new WebSocket(url);
+      wsRef.current = ws;
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === "placementAdded") {
+            setStorage((prev) => ({
+              ...prev,
+              [msg.iWine]: [...(prev[msg.iWine] ?? []), { setupId: msg.setupId, shelf: msg.shelf, layer: msg.layer, slot: msg.slot }],
+            }));
+          } else if (msg.type === "placementRemoved") {
+            setStorage((prev) => {
+              const updated = { ...prev };
+              updated[msg.iWine] = (updated[msg.iWine] ?? []).filter(
+                (p) => !(p.setupId === msg.setupId && p.shelf === msg.shelf && p.layer === msg.layer && p.slot === msg.slot),
+              );
+              return updated;
+            });
+          }
+        } catch { /* ignore malformed messages */ }
+      };
+      ws.onclose = () => { if (!closed) setTimeout(connect, 2000); };
+    };
+    connect();
+
+    return () => { closed = true; ws?.close(); };
+  }, []);
+
+  const send = (msg: object) => {
+    const ws = wsRef.current;
+    if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+  };
 
   const [selectedWine, setSelectedWine] = React.useState<WineItem>();
   const [selectedPosition, setSelectedPosition] = React.useState<BottlePlacement>();
@@ -100,10 +139,7 @@ export const PositionContextProvider = ({
         ...prev,
         [selectedWine.iWine]: [...(prev[selectedWine.iWine] ?? []), { setupId: activeSetupId, shelf, layer, slot }],
       }));
-      fetcher.submit(
-        { intent: "add", iWine: selectedWine.iWine, setupId: activeSetupId, shelf, layer, slot },
-        { method: "POST" },
-      );
+      send({ type: "addPlacement", iWine: selectedWine.iWine, setupId: activeSetupId, shelf, layer, slot });
     } else {
       setSelectedPosition({ setupId: activeSetupId, shelf, layer, slot });
       setSelectedWine(undefined);
@@ -126,10 +162,7 @@ export const PositionContextProvider = ({
     const wineAtPosition = inventoryByLocation[setupId]?.[shelf]?.[layer]?.[slot];
     if (wineAtPosition) {
       removeFromStorage(wineAtPosition, placement);
-      fetcher.submit(
-        { intent: "remove", iWine: wineAtPosition.iWine, setupId, shelf, layer, slot },
-        { method: "POST" },
-      );
+      send({ type: "removePlacement", iWine: wineAtPosition.iWine, setupId, shelf, layer, slot });
     }
   };
 
