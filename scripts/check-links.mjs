@@ -4,7 +4,7 @@
 
 import { readFileSync } from "fs";
 
-const SOURCE_FILE = "app/components/Storage/Selected.tsx";
+const SOURCE_FILE = "app/components/CellarTrackerLink.tsx";
 const EXPECTED_URL_PREFIX = "https://www.cellartracker.com/wine.asp?iWine=";
 const PROBE_URL = `${EXPECTED_URL_PREFIX}1`;
 
