@@ -17,7 +17,7 @@ const WinePosition = () => {
   if (!selectedPosition) return null;
 
   return (
-    <div>
+    <div className="px-4 py-3 text-sm border-t border-ct-border text-ct-muted">
       Shelf {selectedPosition.shelf} · Layer {selectedPosition.layer} · Slot {selectedPosition.slot}
     </div>
   );
@@ -29,21 +29,22 @@ const WineDisplay = ({ wine }: { wine: WineItem }) => {
   const locations = storage[wine.iWine] || [];
 
   return (
-    <div className="flex w-full justify-between p-2 bg-blue-800 gap-4 items-center">
-      <div>
-        <h2>
+    <div className="flex w-full justify-between px-4 py-3 gap-4 items-start border-t-2 border-ct-primary bg-ct-primary-light">
+      <div className="min-w-0">
+        <h2 className="font-semibold text-sm text-ct-primary">
           {wine.Vintage} {wine.Wine}
         </h2>
-        <p>{wine.Varietal}</p>
-        <p>{wine.Region}</p>
-        <p>{wine.Producer}</p>
+        <p className="text-xs mt-0.5 text-ct-muted">
+          {wine.Varietal} · {wine.Region}
+        </p>
+        <p className="text-xs text-ct-muted">{wine.Producer}</p>
       </div>
-      <div>
-        <p>
+      <div className="shrink-0 text-right">
+        <p className="text-sm font-medium tabular-nums text-ct-text">
           {locations.length}/{Number(wine.Quantity)} stored
         </p>
         {locations.length > 0 && (
-          <ul>
+          <ul className="mt-1 space-y-1">
             {locations.map((placement) => (
               <li key={`${placement.setupId}:${placement.shelf}.${placement.layer}.${placement.slot}`}>
                 <LocationDeselector placement={placement} />
@@ -61,21 +62,19 @@ const LocationDeselector = ({ placement }: { placement: BottlePlacement }) => {
 
   return (
     <button
-      className="flex border-2 border-white items-stretch gap-1"
+      className="flex items-center gap-1 rounded border border-ct-border bg-ct-surface text-ct-muted text-xs px-2 py-0.5 hover:border-ct-primary transition-colors"
       onClick={() => clearLocation(placement)}
     >
       <LocationBadge placement={placement} />
-      <div className="bg-white/20 content-center p-1">❌</div>
+      <span className="text-ct-primary">×</span>
     </button>
   );
 };
 
 const LocationBadge = ({ placement }: { placement: BottlePlacement }) => {
   return (
-    <div className="whitespace-nowrap p-1">
-      <div>Shelf: {placement.shelf}</div>
-      <div>Layer: {placement.layer}</div>
-      <div>Pos: {placement.slot}</div>
-    </div>
+    <span className="whitespace-nowrap">
+      S{placement.shelf} · L{placement.layer} · P{placement.slot}
+    </span>
   );
 };

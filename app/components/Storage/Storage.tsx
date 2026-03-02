@@ -4,7 +4,7 @@ import type { ShelfProps } from "types";
 
 export function StorageView({ config }: { config?: ShelfProps[] }) {
   return (
-    <div className="h-full grid grid-rows-[1fr_min-content]">
+    <div className="h-full grid grid-rows-[1fr_min-content] rounded border border-ct-border bg-ct-surface overflow-hidden">
       <Fridge config={config} />
       <Display />
     </div>

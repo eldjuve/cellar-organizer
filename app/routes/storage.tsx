@@ -11,6 +11,7 @@ import { getSession } from "~/sessions.server";
 import { redirect } from "react-router";
 import { StorageView } from "~/components/Storage/Storage";
 import { SetupSelector } from "~/components/SetupSelector";
+import { TopBar } from "~/components/TopBar";
 import type { SetupListItem, StorageSetup } from "types";
 
 export function meta({}: Route.MetaArgs) {
@@ -40,25 +41,28 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const userStore = env.BOTTLE_STORE.getByName(username);
   const locations = await userStore.getInventory();
 
-  return { inventory, locations, setupList, activeSetupId: params.setupId, setupConfig: setup?.config ?? null };
+  return { inventory, locations, setupList, activeSetupId: params.setupId, setupConfig: setup?.config ?? null, username };
 }
 
 
 export default function Storage({ loaderData }: Route.ComponentProps) {
   return (
-    <main className="p-2 flex flex-col gap-4 h-dvh overflow-hidden">
-      <PositionContextProvider
-        inventory={loaderData.inventory}
-        storedPlacements={loaderData.locations}
-        activeSetupId={loaderData.activeSetupId}
-      >
-        <Columns
-          setupList={loaderData.setupList}
+    <main className="flex flex-col h-dvh overflow-hidden bg-ct-bg">
+      <TopBar username={loaderData.username} />
+      <div className="p-3 flex flex-col gap-3 flex-1 overflow-hidden">
+        <PositionContextProvider
+          inventory={loaderData.inventory}
+          storedPlacements={loaderData.locations}
           activeSetupId={loaderData.activeSetupId}
-          setupConfig={loaderData.setupConfig}
-        />
-        <MobileMenu />
-      </PositionContextProvider>
+        >
+          <Columns
+            setupList={loaderData.setupList}
+            activeSetupId={loaderData.activeSetupId}
+            setupConfig={loaderData.setupConfig}
+          />
+          <MobileMenu />
+        </PositionContextProvider>
+      </div>
     </main>
   );
 }
@@ -74,9 +78,9 @@ const Columns = ({
 }) => {
   const { activeTab } = usePositionContext();
   return (
-    <div className="flex h-full gap-4 overflow-hidden">
+    <div className="flex h-full gap-3 overflow-hidden">
       <aside
-        className={`flex-1 overflow-y-auto ${activeTab === "storage" ? "max-md:hidden" : ""}`}
+        className={`flex-1 overflow-y-auto rounded border border-ct-border bg-ct-surface ${activeTab === "storage" ? "max-md:hidden" : ""}`}
       >
         <List />
       </aside>
@@ -95,11 +99,14 @@ const MobileMenu = () => {
 
   return (
     <nav className="mobile-menu flex w-full justify-center md:hidden">
-      <button className="flex border rounded" onClick={toggleTab}>
-        <div className={`p-2 ${activeTab === "list" && "bg-blue-800"}`}>
-          Winelist
+      <button
+        className="flex border border-ct-border rounded overflow-hidden text-sm font-medium"
+        onClick={toggleTab}
+      >
+        <div className={`px-4 py-2 transition-colors ${activeTab === "list" ? "bg-ct-primary text-white" : "bg-ct-surface text-ct-text"}`}>
+          Wine list
         </div>
-        <div className={`p-2 ${activeTab === "storage" && "bg-blue-800"}`}>
+        <div className={`px-4 py-2 transition-colors ${activeTab === "storage" ? "bg-ct-primary text-white" : "bg-ct-surface text-ct-text"}`}>
           Storage
         </div>
       </button>

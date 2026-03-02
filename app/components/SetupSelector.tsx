@@ -17,16 +17,16 @@ export const SetupSelector = ({
           <select
             value={activeSetupId}
             onChange={(e) => navigate(`/${e.target.value}`)}
-            className="rounded border border-slate-700 bg-slate-800 px-2 py-2 text-slate-100"
+            className="rounded border border-ct-border bg-ct-surface text-ct-text px-2 py-1.5 text-sm flex-1 min-w-0"
           >
             {setupList.map(({ id, name }) => (
               <option key={id} value={id}>{name}</option>
             ))}
           </select>
-          <Link to={`/setup/${activeSetupId}`} className="button-primary">Edit</Link>
+          <Link to={`/setup/${activeSetupId}`} className="button-primary shrink-0">Edit</Link>
         </>
       )}
-      <Link to="/setup/new" className="button-primary">New Setup</Link>
+      <Link to="/setup/new" className="button-primary shrink-0">New Setup</Link>
     </div>
   );
 };

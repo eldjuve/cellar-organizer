@@ -4,9 +4,9 @@ import type { BottlePlacement, WineItem } from "types";
 export function List() {
   const { inventory, storage } = usePositionContext();
   return (
-    <ul>
+    <ul className="divide-y divide-ct-border">
       {inventory.map((wine) => (
-        <li key={wine.iWine} className="even:bg-gray-100/5">
+        <li key={wine.iWine}>
           <WineRow wine={wine} locations={storage[wine.iWine] ?? []} />
         </li>
       ))}
@@ -25,36 +25,36 @@ const WineRow = ({
     usePositionContext();
 
   const quantity = Number(wine.Quantity);
-  const disabled = selectedPosition && locations.length === quantity;
+  const disabled = !!(selectedPosition && locations.length === quantity);
+  const isSelected = selectedWine?.iWine === wine.iWine;
+  const fullyStored = locations.length === quantity;
 
   return (
     <button
       onClick={() => setSelectedWine(wine)}
       disabled={disabled}
-      className="flex items-center p-1 w-full hover:bg-blue-600 text-sm"
+      className={`flex items-center px-3 py-2 w-full text-sm text-left transition-colors
+        disabled:opacity-45 disabled:cursor-default disabled:pointer-events-none
+        ${isSelected ? "bg-ct-primary-light" : "hover:bg-ct-primary-light"}`}
     >
-      <div className="flex flex-col w-full">
-        <div className="text-blue-400 font-medium text-left">
-          <span>
-            {wine.Vintage} {wine.Wine}
-          </span>
-        </div>
-        <div className="flex flex-col text-sm text-left">
-          <span>{wine.Producer}</span>
-          <span>
-            CT{Math.round(parseFloat(wine.CT))} {wine.Region} {wine.Type}
-          </span>
-        </div>
+      <div className="flex flex-col flex-1 min-w-0">
+        <span className="font-medium truncate text-ct-primary">
+          {wine.Vintage} {wine.Wine}
+        </span>
+        <span className="truncate text-ct-muted">
+          {wine.Producer}
+        </span>
+        <span className="text-xs truncate text-ct-muted">
+          CT{Math.round(parseFloat(wine.CT))} · {wine.Region} · {wine.Type}
+        </span>
       </div>
-      <div>
-        {locations.length}/{quantity}
-        {locations.length === quantity ? (
-          <span className="ml-2 text-green-400">✔️</span>
-        ) : locations.length < quantity ? (
-          <span className="ml-2 text-yellow-400">➕</span>
-        ) : (
-          <span className="ml-2 text-red-400">❌</span>
-        )}
+      <div className="ml-3 flex items-center gap-1 shrink-0 tabular-nums text-ct-muted">
+        <span>{locations.length}/{quantity}</span>
+        {fullyStored ? (
+          <span className="text-green-600">✓</span>
+        ) : locations.length > 0 ? (
+          <span className="text-ct-primary">·</span>
+        ) : null}
       </div>
     </button>
   );

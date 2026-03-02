@@ -71,27 +71,25 @@ export default function Login({ loaderData }: Route.ComponentProps) {
   const loading = fetcher.state !== "idle";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100 p-6">
-      <div className="flex flex-col w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/40">
-        <div className="mb-6 flex flex-col items-center">
-          <div className="mb-3 flex h-12">
-            <img
-              src={logo}
-              alt="CellarTracker Logo"
-              className="h-full w-full"
-            />
+    <div className="min-h-screen flex items-center justify-center p-6 bg-ct-bg">
+      <div className="flex flex-col w-full max-w-sm rounded-xl border border-ct-border bg-ct-surface p-8 shadow-sm">
+        <div className="mb-6 flex flex-col items-center gap-3">
+          <div className="h-10">
+            <img src={logo} alt="CellarTracker Logo" className="h-full w-auto" />
           </div>
-          <h1 className="text-xl font-semibold tracking-tight text-slate-900">
-            Login with CellarTracker
+          <h1 className="text-lg font-semibold tracking-tight text-ct-text">
+            Sign in to Cellar Organizer
           </h1>
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2 w-full text-center">
+              {error}
+            </p>
+          )}
         </div>
 
         <form method="POST" className="space-y-4">
           <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-slate-700"
-            >
+            <label htmlFor="username" className="block text-sm font-medium mb-1 text-ct-text">
               Username
             </label>
             <input
@@ -99,16 +97,13 @@ export default function Login({ loaderData }: Route.ComponentProps) {
               name="username"
               type="text"
               required
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition"
+              className="w-full rounded border border-ct-border bg-ct-bg text-ct-text px-3 py-2.5 text-sm focus:outline-none transition"
               placeholder="Enter your username"
             />
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-slate-700"
-            >
+            <label htmlFor="password" className="block text-sm font-medium mb-1 text-ct-text">
               Password
             </label>
             <input
@@ -116,7 +111,7 @@ export default function Login({ loaderData }: Route.ComponentProps) {
               name="password"
               type="password"
               required
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition"
+              className="w-full rounded border border-ct-border bg-ct-bg text-ct-text px-3 py-2.5 text-sm focus:outline-none transition"
               placeholder="••••••••"
             />
           </div>
@@ -124,21 +119,17 @@ export default function Login({ loaderData }: Route.ComponentProps) {
           <button
             disabled={loading}
             type="submit"
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-70"
+            className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded bg-ct-primary px-4 py-2.5 font-semibold text-white text-sm transition hover:bg-ct-primary-hover disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {loading ? <div className="loader" /> : "Login"}
+            {loading ? <div className="loader" /> : "Sign in"}
           </button>
         </form>
+
         <button
-          className="m-2 text-black hover:text-blue-600"
-          onClick={() =>
-            fetcher.submit(
-              { username: "demo", password: "demo" },
-              { method: "POST" },
-            )
-          }
+          className="mt-4 text-sm text-ct-muted hover:text-ct-text transition-colors"
+          onClick={() => fetcher.submit({ username: "demo", password: "demo" }, { method: "POST" })}
         >
-          Demo
+          Use demo account
         </button>
       </div>
     </div>
