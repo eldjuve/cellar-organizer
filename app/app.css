@@ -29,28 +29,36 @@ body {
   padding-left: env(safe-area-inset-left);
 }
 
-.shelf-container {
-  overflow: auto;
-  width: 100%;
-  padding-top: 7px;
-  padding-bottom: 4px;
-  border-bottom: 6px solid #B8B0A4;
-  box-shadow: 0 3px 0 #8A8278;
-}
-
 .shelf {
+  width: 100%;
   display: grid;
   align-items: center;
-  grid-template-rows: auto;
-  overflow-x: auto;
+  overflow-x: scroll;
+  padding-top: 7px;
+  padding-bottom: 4px;
   grid-template-columns: repeat(var(--capacity), 1fr);
   container-type: inline-size;
+  scrollbar-width: thin;
+  scrollbar-color: #8A8278 #B8B0A4;
+
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: #B8B0A4;
+    box-shadow: 0 3px 0 #8A8278;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #8A8278;
+    border-radius: 9999px;
+  }
 }
 
 .row {
   display: grid;
   grid-template-columns: subgrid;
   grid-column: 1 / -1;
+  justify-items: center;
 
   &[class*='--odd'] {
     .slot {
@@ -61,9 +69,11 @@ body {
 
 .slot {
   display: flex;
+  min-width: 2rem;
+  max-width: calc(100cqw / var(--max-capacity));
   justify-content: center;
   align-items: center;
-  overflow: hidden;
+  width: 100%;
 }
 
 .slot-button {
@@ -73,8 +83,7 @@ body {
   background-color: #DDDAD4;
   border: 2px solid #9E9A94;
   border-radius: calc(infinity * 1px);
-  width: 100%;
-  max-width: calc(100cqw / var(--max-capacity));
+  width: 95%;
   @apply aspect-square;
 
   &:not([data-color])::after {

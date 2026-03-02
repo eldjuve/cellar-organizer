@@ -1,5 +1,7 @@
 {
   "files.associations": {
-    "wrangler.json": "jsonc"
-  }
+    "wrangler.json": "jsonc",
+    "*.css": "tailwindcss"
+  },
+  "tailwindCSS.experimental.configFile": "app/app.css"
 }

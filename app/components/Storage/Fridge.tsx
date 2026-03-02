@@ -19,7 +19,7 @@ export function Fridge({ config }: { config?: ShelfProps[] }) {
 
   return (
     <ul
-      className="flex flex-col justify-center p-4 overflow-x-auto"
+      className="flex flex-col justify-center-safe p-4 overflow-x-hidden overflow-y-auto"
       style={{ '--max-capacity': maxCapacity } as CSSProperties}
     >
       {shelfs.map((shelf, index) => (
@@ -31,19 +31,17 @@ export function Fridge({ config }: { config?: ShelfProps[] }) {
 
 export function Shelf({ options, shelfId }: { options: ShelfProps; shelfId: number }) {
   return (
-    <li className="shelf-container">
-      <div className="shelf" style={{ '--capacity': options.capacity } as CSSProperties}>
-        {Array.from({ length: options.layers ?? 1 }).map((_, index) => (
-          <Layer
-            {...options}
-            level={index}
-            shelfId={shelfId}
-            layerId={index + 1}
-            key={index}
-          />
-        )).reverse()}
-      </div>
-    </li>
+    <div className="shelf" style={{ '--capacity': options.capacity } as CSSProperties}>
+      {Array.from({ length: options.layers ?? 1 }).map((_, index) => (
+        <Layer
+          {...options}
+          level={index}
+          shelfId={shelfId}
+          layerId={index + 1}
+          key={index}
+        />
+      )).reverse()}
+    </div>
   );
 }
 
