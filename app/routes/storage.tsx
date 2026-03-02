@@ -83,7 +83,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
 export default function Storage({ loaderData }: Route.ComponentProps) {
   return (
-    <main className="flex flex-col h-dvh overflow-hidden bg-ct-bg">
+    <main className="flex flex-col h-dvh overflow-hidden bg-ct-bg pb-[env(safe-area-inset-bottom)]">
       <TopBar username={loaderData.username} />
       <div className="p-3 flex flex-col gap-3 flex-1 overflow-hidden">
         <PositionContextProvider

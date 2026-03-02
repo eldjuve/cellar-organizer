@@ -8,4 +8,5 @@ export default [
   ...prefix("setup", [
     route(":id", "routes/setup/setup.tsx"),
   ]),
+  route("api/barcode", "routes/api.barcode.ts"),
 ] satisfies RouteConfig;

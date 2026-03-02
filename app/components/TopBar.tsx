@@ -3,7 +3,7 @@ import { Logo } from "./Logo";
 
 export function TopBar({ username }: { username: string }) {
   return (
-    <header className="flex items-center justify-between px-4 py-2 border-b border-ct-border bg-ct-surface text-sm">
+    <header className="flex items-center justify-between px-4 py-2 border-b border-ct-border bg-ct-surface text-sm pt-[max(0.5rem,env(safe-area-inset-top))]">
       <Link to="/"><Logo /></Link>
       <div className="flex items-center gap-4">
         <Form method="POST" action="/logout">
