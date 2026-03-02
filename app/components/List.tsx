@@ -49,7 +49,7 @@ const WineRow = ({
           {wine.Producer}
         </span>
         <span className="text-xs truncate text-ct-muted">
-          CT{Math.round(parseFloat(wine.CT))} · {wine.Region} · {wine.Type}
+          CT{wine.CT ? Math.round(parseFloat(wine.CT)) : "-"} · {wine.Region} · {wine.Type}
         </span>
       </div>
       <div className="ml-3 flex items-center gap-1 shrink-0 tabular-nums text-ct-muted">
