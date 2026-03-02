@@ -40,6 +40,11 @@ function getStub(name = "test-wine") {
   return env.WINE_STORE.get(env.WINE_STORE.idFromName(name));
 }
 
+// Simulates how the app resolves a user's store: env.WINE_STORE.getByName(username)
+function getUserStub(username: string) {
+  return env.WINE_STORE.get(env.WINE_STORE.idFromName(username));
+}
+
 describe("setInventory / getCount", () => {
   it("stores wines and getCount returns correct count", async () => {
     const stub = getStub("count-basic");
@@ -284,6 +289,117 @@ describe("getFilterOptions", () => {
     const { types } = await stub.getFilterOptions();
     expect(types).toEqual(["Red"]);
     expect(types.length).toBe(1);
+  });
+});
+
+describe("getWinesInSetup", () => {
+  it("returns wines placed in the given setup", async () => {
+    const stub = getStub("inwinesetup-basic");
+    await stub.setInventory([
+      makeWine({ iWine: "1", Wine: "Margaux", Producer: "P" }),
+      makeWine({ iWine: "2", Wine: "Latour", Producer: "P" }),
+    ]);
+    await stub.addPlacement("1", "setup-a", 0, 0, 0);
+    const result = await stub.getWinesInSetup("setup-a");
+    expect(result).toHaveLength(1);
+    expect(result[0].iWine).toBe("1");
+  });
+
+  it("returns empty array when no bottles are placed in the setup", async () => {
+    const stub = getStub("inwinesetup-empty");
+    await stub.setInventory([
+      makeWine({ iWine: "1", Wine: "Wine A", Producer: "P" }),
+    ]);
+    const result = await stub.getWinesInSetup("no-such-setup");
+    expect(result).toEqual([]);
+  });
+
+  it("returns only wines placed in the requested setup, not others", async () => {
+    const stub = getStub("inwinesetup-scoped");
+    await stub.setInventory([
+      makeWine({ iWine: "1", Wine: "Wine A", Producer: "P" }),
+      makeWine({ iWine: "2", Wine: "Wine B", Producer: "P" }),
+    ]);
+    await stub.addPlacement("1", "setup-x", 0, 0, 0);
+    await stub.addPlacement("2", "setup-y", 0, 0, 0);
+    const result = await stub.getWinesInSetup("setup-x");
+    expect(result).toHaveLength(1);
+    expect(result[0].iWine).toBe("1");
+  });
+
+  it("returns multiple wines when multiple are placed in the same setup", async () => {
+    const stub = getStub("inwinesetup-multi");
+    await stub.setInventory([
+      makeWine({ iWine: "1", Wine: "A", Producer: "P" }),
+      makeWine({ iWine: "2", Wine: "B", Producer: "P" }),
+      makeWine({ iWine: "3", Wine: "C", Producer: "P" }),
+    ]);
+    await stub.addPlacement("1", "setup-z", 0, 0, 0);
+    await stub.addPlacement("2", "setup-z", 0, 0, 1);
+    const result = await stub.getWinesInSetup("setup-z");
+    expect(result).toHaveLength(2);
+    const ids = result.map((w) => w.iWine).sort();
+    expect(ids).toEqual(["1", "2"]);
+  });
+});
+
+describe("user isolation", () => {
+  it("alice's inventory is not visible to bob", async () => {
+    const alice = getUserStub("alice-wines-1");
+    const bob = getUserStub("bob-wines-1");
+    await alice.setInventory([
+      makeWine({ iWine: "1", Wine: "Alice's Wine", Producer: "P" }),
+    ]);
+    expect(await bob.getCount()).toBe(0);
+    expect(await bob.queryInventory()).toEqual([]);
+  });
+
+  it("bob cannot query alice's wines by id", async () => {
+    const alice = getUserStub("alice-wines-2");
+    const bob = getUserStub("bob-wines-2");
+    await alice.setInventory([
+      makeWine({ iWine: "secret-1", Wine: "Secret Wine", Producer: "P" }),
+    ]);
+    const result = await bob.getWinesByIds(["secret-1"]);
+    expect(result).toEqual([]);
+  });
+
+  it("bob cannot find alice's wine by barcode", async () => {
+    const alice = getUserStub("alice-wines-3");
+    const bob = getUserStub("bob-wines-3");
+    await alice.setInventory([
+      makeWine({ iWine: "1", Wine: "Labeled", Producer: "P", WineBarcode: "ALICE-BAR" }),
+    ]);
+    const result = await bob.lookupBarcode("ALICE-BAR");
+    expect(result).toBeNull();
+  });
+
+  it("alice's placements are not visible to bob", async () => {
+    const alice = getUserStub("alice-wines-4");
+    const bob = getUserStub("bob-wines-4");
+    await alice.addPlacement("wine1", "setup1", 0, 0, 0);
+    const bobInventory = await bob.getInventory();
+    expect(bobInventory).toEqual({});
+  });
+
+  it("bob's placement cannot remove alice's placement", async () => {
+    const alice = getUserStub("alice-wines-5");
+    const bob = getUserStub("bob-wines-5");
+    await alice.addPlacement("wine1", "setup1", 0, 0, 0);
+    await bob.removePlacement("wine1", "setup1", 0, 0, 0); // operates on bob's empty store
+    const aliceInventory = await alice.getInventory();
+    expect(aliceInventory["wine1"]).toHaveLength(1); // alice's placement untouched
+  });
+
+  it("alice's filter options are not visible to bob", async () => {
+    const alice = getUserStub("alice-wines-6");
+    const bob = getUserStub("bob-wines-6");
+    await alice.setInventory([
+      makeWine({ iWine: "1", Wine: "A", Producer: "P", Type: "Red", Country: "France" }),
+    ]);
+    const { types, countries } = await bob.getFilterOptions();
+    expect(types).toEqual([]);
+    expect(countries).toEqual([]);
   });
 });
 
