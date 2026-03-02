@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { useNavigate } from "react-router";
 import type { BottlePlacement, BottlePlacements, BottlesClientMessage, BottlesServerMessage, WineItem } from "types";
 
 type InventoryMatrix = {
@@ -11,18 +12,24 @@ type InventoryMatrix = {
   };
 };
 
+type FilterOptions = { types: string[]; countries: string[] };
+type ActiveFilters = { q: string; type: string; country: string; inSetup: boolean };
+
 type PositionContext = {
   selectedWine: WineItem | undefined;
-  setSelectedWine: (wine: WineItem) => void;
+  setSelectedWine: (wine: WineItem | undefined) => void;
   selectedPosition: BottlePlacement | undefined;
   onSlotSelect: (shelf: number, layer: number, slot: number) => void;
   clearLocation: (placement: BottlePlacement) => void;
   inventory: WineItem[];
+  listInventory: WineItem[];
   storage: BottlePlacements;
   inventoryByLocation: InventoryMatrix;
   activeTab: "list" | "storage";
   toggleTab: () => void;
   activeSetupId: string | null;
+  filterOptions: FilterOptions;
+  activeFilters: ActiveFilters;
 };
 
 const positionContext = React.createContext<PositionContext | undefined>(
@@ -43,14 +50,21 @@ export const usePositionContext = () => {
 export const PositionContextProvider = ({
   children,
   inventory,
+  listWineIds,
   storedPlacements,
   activeSetupId = null,
+  filterOptions = { types: [], countries: [] },
+  activeFilters = { q: "", type: "", country: "", inSetup: false },
 }: {
   children: React.ReactNode;
   inventory: WineItem[];
+  listWineIds?: string[];
   storedPlacements: BottlePlacements;
   activeSetupId?: string | null;
+  filterOptions?: FilterOptions;
+  activeFilters?: ActiveFilters;
 }) => {
+  const navigate = useNavigate();
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -113,6 +127,12 @@ export const PositionContextProvider = ({
     }, {} as InventoryMatrix);
   }, [storage, inventory]);
 
+  const listInventory = React.useMemo(() => {
+    if (!listWineIds) return inventory;
+    const ids = new Set(listWineIds);
+    return inventory.filter((w) => ids.has(w.iWine));
+  }, [inventory, listWineIds]);
+
   const removeFromStorage = (wine: WineItem, placement: BottlePlacement) =>
     setStorage((prev) => {
       const updated = { ...prev };
@@ -150,6 +170,13 @@ export const PositionContextProvider = ({
   useEffect(() => {
     if (selectedWine) {
       setActiveTab("storage");
+      const placements = storage[selectedWine.iWine];
+      if (placements?.length && activeSetupId) {
+        const inActiveSetup = placements.some((p) => p.setupId === activeSetupId);
+        if (!inActiveSetup) {
+          navigate(`/${placements[0].setupId}`);
+        }
+      }
     }
   }, [selectedWine]);
 
@@ -170,6 +197,7 @@ export const PositionContextProvider = ({
     <positionContext.Provider
       value={{
         inventory,
+        listInventory,
         storage,
         selectedWine,
         setSelectedWine,
@@ -180,6 +208,8 @@ export const PositionContextProvider = ({
         activeTab,
         toggleTab,
         activeSetupId,
+        filterOptions,
+        activeFilters,
       }}
     >
       {children}

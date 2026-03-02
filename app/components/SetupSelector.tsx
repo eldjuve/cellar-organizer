@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router";
 import type { SetupListItem } from "types";
+import { usePositionContext } from "./PositionContextProvider";
 
 export const SetupSelector = ({
   setupList,
@@ -9,6 +10,7 @@ export const SetupSelector = ({
   activeSetupId: string;
 }) => {
   const navigate = useNavigate();
+  const { setSelectedWine } = usePositionContext();
 
   return (
     <div className="flex items-center gap-2">
@@ -16,7 +18,10 @@ export const SetupSelector = ({
         <>
           <select
             value={activeSetupId}
-            onChange={(e) => navigate(`/${e.target.value}`)}
+            onChange={(e) => {
+              setSelectedWine(undefined);
+              navigate(`/${e.target.value}`);
+            }}
             className="rounded border border-ct-border bg-ct-surface text-ct-text px-2 py-1.5 text-sm flex-1 min-w-0"
           >
             {setupList.map(({ id, name }) => (
