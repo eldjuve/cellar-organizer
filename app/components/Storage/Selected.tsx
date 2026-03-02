@@ -3,6 +3,7 @@ import type { BottlePlacement, WineItem } from "types";
 import { usePositionContext } from "../PositionContextProvider";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { CellarTrackerLink } from "../CellarTrackerLink";
+import { BarcodeScanIcon } from "../icons";
 
 export function Display() {
   const { selectedWine } = usePositionContext();
@@ -27,16 +28,7 @@ const WinePosition = () => {
         onClick={() => setScanning(true)}
         className="shrink-0 flex items-center gap-1 rounded border border-ct-border bg-ct-surface text-ct-muted text-xs px-2 py-1 hover:border-ct-primary hover:text-ct-primary transition-colors"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
-          <path d="M3 7V5a2 2 0 0 1 2-2h2" />
-          <path d="M17 3h2a2 2 0 0 1 2 2v2" />
-          <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
-          <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-          <line x1="7" y1="12" x2="7" y2="12" />
-          <line x1="12" y1="7" x2="12" y2="17" />
-          <line x1="17" y1="12" x2="17" y2="12" />
-          <rect x="9" y="7" width="6" height="10" rx="1" />
-        </svg>
+        <BarcodeScanIcon className="w-3.5 h-3.5" />
         Scan
       </button>
       {scanning && (
