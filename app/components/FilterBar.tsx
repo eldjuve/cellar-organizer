@@ -44,15 +44,15 @@ export function FilterBar() {
     }, { replace: true });
   };
 
-  const handleInSetup = () => {
+  const handlePlacement = (value: "all" | "active" | "pending") => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      if (activeFilters.inSetup) next.delete("inSetup"); else next.set("inSetup", "1");
+      if (value === "all") next.delete("placement"); else next.set("placement", value);
       return next;
     }, { replace: true });
   };
 
-  const hasFilters = activeFilters.q || activeFilters.type || activeFilters.country || activeFilters.inSetup;
+  const hasFilters = activeFilters.q || activeFilters.type || activeFilters.country || activeFilters.placement !== "all";
 
   const clearAll = () => {
     setLocalQ("");
@@ -61,7 +61,7 @@ export function FilterBar() {
       next.delete("q");
       next.delete("type");
       next.delete("country");
-      next.delete("inSetup");
+      next.delete("placement");
       return next;
     }, { replace: true });
   };
@@ -95,16 +95,21 @@ export function FilterBar() {
           <option key={c} value={c}>{c}</option>
         ))}
       </select>
-      <button
-        onClick={handleInSetup}
-        className={`px-2 py-1 rounded border text-sm transition-colors ${
-          activeFilters.inSetup
-            ? "bg-ct-primary text-white border-ct-primary"
-            : "border-ct-border text-ct-muted hover:border-ct-primary hover:text-ct-primary"
-        }`}
-      >
-        In setup
-      </button>
+      <div className="flex border border-ct-border rounded overflow-hidden text-sm">
+        {(["all", "active", "pending"] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => handlePlacement(v)}
+            className={`px-2 py-1 transition-colors ${
+              activeFilters.placement === v
+                ? "bg-ct-primary text-white"
+                : "text-ct-muted hover:text-ct-primary"
+            }`}
+          >
+            {v === "all" ? "All" : v === "active" ? "Active" : "Pending"}
+          </button>
+        ))}
+      </div>
       {hasFilters && (
         <button
           onClick={clearAll}

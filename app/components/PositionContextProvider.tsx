@@ -13,7 +13,7 @@ type InventoryMatrix = {
 };
 
 type FilterOptions = { types: string[]; countries: string[] };
-type ActiveFilters = { q: string; type: string; country: string; inSetup: boolean };
+type ActiveFilters = { q: string; type: string; country: string; placement: "all" | "active" | "pending" };
 
 type PositionContext = {
   selectedWine: WineItem | undefined;
@@ -21,7 +21,6 @@ type PositionContext = {
   selectedPosition: BottlePlacement | undefined;
   onSlotSelect: (shelf: number, layer: number, slot: number) => void;
   clearLocation: (placement: BottlePlacement) => void;
-  inventory: WineItem[];
   listInventory: WineItem[];
   storage: BottlePlacements;
   inventoryByLocation: InventoryMatrix;
@@ -49,16 +48,16 @@ export const usePositionContext = () => {
 
 export const PositionContextProvider = ({
   children,
-  inventory,
-  listWineIds,
+  listInventory,
+  placedInventory,
   storedPlacements,
   activeSetupId = null,
   filterOptions = { types: [], countries: [] },
-  activeFilters = { q: "", type: "", country: "", inSetup: false },
+  activeFilters = { q: "", type: "", country: "", placement: "all" as const },
 }: {
   children: React.ReactNode;
-  inventory: WineItem[];
-  listWineIds?: string[];
+  listInventory: WineItem[];
+  placedInventory: WineItem[];
   storedPlacements: BottlePlacements;
   activeSetupId?: string | null;
   filterOptions?: FilterOptions;
@@ -117,21 +116,18 @@ export const PositionContextProvider = ({
   }, [storedPlacements]);
 
   const inventoryByLocation = React.useMemo(() => {
+    const byId = new Map<string, WineItem>();
+    for (const w of placedInventory) byId.set(w.iWine, w);
+    for (const w of listInventory) byId.set(w.iWine, w);
     return Object.entries(storage).reduce((acc, [iWine, placements]) => {
-      const wine = inventory.find((w) => w.iWine === iWine);
+      const wine = byId.get(iWine);
       placements.forEach(({ setupId, shelf, layer, slot }) => {
         ((acc[setupId] ??= {})[shelf] ??= {})[layer] ??= {};
         acc[setupId][shelf][layer][slot] = wine!;
       });
       return acc;
     }, {} as InventoryMatrix);
-  }, [storage, inventory]);
-
-  const listInventory = React.useMemo(() => {
-    if (!listWineIds) return inventory;
-    const ids = new Set(listWineIds);
-    return inventory.filter((w) => ids.has(w.iWine));
-  }, [inventory, listWineIds]);
+  }, [storage, listInventory, placedInventory]);
 
   const removeFromStorage = (wine: WineItem, placement: BottlePlacement) =>
     setStorage((prev) => {
@@ -196,7 +192,6 @@ export const PositionContextProvider = ({
   return (
     <positionContext.Provider
       value={{
-        inventory,
         listInventory,
         storage,
         selectedWine,

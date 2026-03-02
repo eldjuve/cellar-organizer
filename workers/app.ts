@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { createRequestHandler } from "react-router";
-import type { BottlesClientMessage, BottlePlacements, SetupsClientMessage, SetupListItem, StorageSetup } from "types";
+import type { BottlesClientMessage, BottlePlacements, SetupsClientMessage, SetupListItem, StorageSetup, WineItem } from "types";
 import { getSession } from "../app/sessions.server";
 
 declare module "react-router" {
@@ -223,5 +223,81 @@ export class StorageSetupStore extends DurableObject<Env> {
 
   async webSocketError(ws: WebSocket): Promise<void> {
     ws.close(1011, "Internal error");
+  }
+}
+
+export class WineInventoryStore extends DurableObject<Env> {
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
+    ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS wines (
+        iWine         TEXT PRIMARY KEY,
+        wine          TEXT NOT NULL,
+        producer      TEXT NOT NULL,
+        type          TEXT,
+        country       TEXT,
+        quantity      INTEGER DEFAULT 0,
+        wine_barcode  TEXT,
+        upc           TEXT,
+        data          TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_type         ON wines(type);
+      CREATE INDEX IF NOT EXISTS idx_country      ON wines(country);
+      CREATE INDEX IF NOT EXISTS idx_wine_barcode ON wines(wine_barcode);
+      CREATE INDEX IF NOT EXISTS idx_upc          ON wines(upc);
+    `);
+  }
+
+  setInventory(wines: WineItem[]): void {
+    this.ctx.storage.sql.exec("DELETE FROM wines");
+    for (const w of wines) {
+      this.ctx.storage.sql.exec(
+        `INSERT INTO wines (iWine, wine, producer, type, country, quantity, wine_barcode, upc, data)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        w.iWine, w.Wine, w.Producer, w.Type ?? null, w.Country ?? null,
+        Number(w.Quantity), w.WineBarcode || null, w.UPC || null, JSON.stringify(w),
+      );
+    }
+  }
+
+  getCount(): number {
+    const rows = [...this.ctx.storage.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM wines")];
+    return rows[0].n;
+  }
+
+  queryInventory(q?: string, type?: string, country?: string): WineItem[] {
+    let sql = "SELECT data FROM wines WHERE 1=1";
+    const params: unknown[] = [];
+    if (type)    { sql += " AND type = ?";                           params.push(type); }
+    if (country) { sql += " AND country = ?";                        params.push(country); }
+    if (q)       { sql += " AND (wine LIKE ? OR producer LIKE ?)";   params.push(`%${q}%`, `%${q}%`); }
+    return [...this.ctx.storage.sql.exec<{ data: string }>(sql, ...params)]
+      .map((r) => JSON.parse(r.data));
+  }
+
+  getWinesByIds(ids: string[]): WineItem[] {
+    if (!ids.length) return [];
+    const placeholders = ids.map(() => "?").join(", ");
+    return [...this.ctx.storage.sql.exec<{ data: string }>(
+      `SELECT data FROM wines WHERE iWine IN (${placeholders})`, ...ids,
+    )].map((r) => JSON.parse(r.data));
+  }
+
+  lookupBarcode(barcode: string): WineItem | null {
+    const rows = [...this.ctx.storage.sql.exec<{ data: string }>(
+      "SELECT data FROM wines WHERE wine_barcode = ? OR upc = ? LIMIT 1",
+      barcode, barcode,
+    )];
+    return rows.length ? JSON.parse(rows[0].data) : null;
+  }
+
+  getFilterOptions(): { types: string[]; countries: string[] } {
+    const types = [...this.ctx.storage.sql.exec<{ type: string }>(
+      "SELECT DISTINCT type FROM wines WHERE type IS NOT NULL ORDER BY type",
+    )].map((r) => r.type);
+    const countries = [...this.ctx.storage.sql.exec<{ country: string }>(
+      "SELECT DISTINCT country FROM wines WHERE country IS NOT NULL ORDER BY country",
+    )].map((r) => r.country);
+    return { types, countries };
   }
 }

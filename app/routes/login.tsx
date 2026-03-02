@@ -3,6 +3,7 @@ import type { Route } from "./+types/login";
 
 import { getSession, commitSession } from "../sessions.server";
 import { fetchWineData } from "~/utils.server";
+import { env } from "workers/store";
 
 import logo from "./ct_logo.png";
 
@@ -42,9 +43,12 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   try {
-    const result = await fetchWineData(username, password);
+    const inventory = await fetchWineData(username, password);
     session.set("username", username);
     session.set("password", password);
+
+    const wineStore = env.WINE_STORE.getByName(username);
+    await wineStore.setInventory(inventory);
 
     // Login succeeded, send them to the home page.
     return redirect("/", {

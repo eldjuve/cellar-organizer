@@ -57,7 +57,7 @@ export default function Component({ loaderData }: Route.ComponentProps) {
       <TopBar username={loaderData.username} />
       <div className="flex flex-col items-center gap-4 p-6">
         <div className="w-full max-w-5xl rounded-xl border border-ct-border bg-ct-surface p-6 shadow-sm">
-          <PositionContextProvider storedPlacements={{}} inventory={[]}>
+          <PositionContextProvider storedPlacements={{}} listInventory={[]} placedInventory={[]}>
             <SetupFridge storedConfig={loaderData.config} initialName={loaderData.name} initialId={loaderData.id} />
           </PositionContextProvider>
         </div>

@@ -12,7 +12,7 @@ import { redirect } from "react-router";
 import { StorageView } from "~/components/Storage/Storage";
 import { SetupSelector } from "~/components/SetupSelector";
 import { TopBar } from "~/components/TopBar";
-import type { SetupListItem, StorageSetup } from "types";
+import type { SetupListItem, StorageSetup, WineItem } from "types";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -30,53 +30,49 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
   const username = session.get("username")!;
 
-  const setupStore = env.SETUP_STORE.getByName(username);
-  const [setupList, setup] = await Promise.all([
-    setupStore.getSetupList(),
-    setupStore.getSetup(params.setupId!),
-  ]);
-
-  const inventory = await fetchWineData(username, session.get("password")!);
-
-  const userStore = env.BOTTLE_STORE.getByName(username);
-  const locations = await userStore.getInventory();
-
   const url = new URL(request.url);
   const q = url.searchParams.get("q") ?? "";
   const type = url.searchParams.get("type") ?? "";
   const country = url.searchParams.get("country") ?? "";
-  const inSetup = url.searchParams.get("inSetup") === "1";
+  const placement = (url.searchParams.get("placement") ?? "all") as "all" | "active" | "pending";
 
-  const filterOptions = {
-    types: [...new Set(inventory.map((w) => w.Type).filter(Boolean))].sort(),
-    countries: [...new Set(inventory.map((w) => w.Country).filter(Boolean))].sort(),
-  };
+  const wineStore = env.WINE_STORE.getByName(username);
+
+  // Backfill for existing users who logged in before this feature
+  if ((await wineStore.getCount()) === 0) {
+    const all = await fetchWineData(username, session.get("password")!);
+    await wineStore.setInventory(all);
+  }
+
+  const setupStore = env.SETUP_STORE.getByName(username);
+  const userStore = env.BOTTLE_STORE.getByName(username);
+
+  const [filterOptions, listWines, locations, setupList, setup] = await Promise.all([
+    wineStore.getFilterOptions(),
+    wineStore.queryInventory(q || undefined, type || undefined, country || undefined),
+    userStore.getInventory(),
+    setupStore.getSetupList(),
+    setupStore.getSetup(params.setupId!),
+  ]);
 
   const placedInSetup = new Set(
     Object.entries(locations)
-      .filter(([, placements]) => placements.some((p) => p.setupId === params.setupId))
+      .filter(([, ps]) => ps.some((p) => p.setupId === params.setupId))
       .map(([iWine]) => iWine)
   );
 
-  let listInventory = inventory;
-  if (inSetup) listInventory = listInventory.filter((w) => placedInSetup.has(w.iWine));
-  if (type) listInventory = listInventory.filter((w) => w.Type === type);
-  if (country) listInventory = listInventory.filter((w) => w.Country === country);
-  if (q) listInventory = listInventory.filter((w) =>
-    `${w.Wine} ${w.Producer}`.toLowerCase().includes(q.toLowerCase())
-  );
+  let listInventory: WineItem[] = listWines;
+  if (placement === "active") listInventory = listInventory.filter((w) => placedInSetup.has(w.iWine));
+  if (placement === "pending") listInventory = listInventory.filter((w) => (locations[w.iWine]?.length ?? 0) < Number(w.Quantity));
 
-  const listWineIds = new Set(listInventory.map((w) => w.iWine));
-
-  const placedWines = inventory.filter((w) => placedInSetup.has(w.iWine) && !listWineIds.has(w.iWine));
-  const mergedInventory = [...listInventory, ...placedWines];
+  const placedInventory = await wineStore.getWinesByIds([...placedInSetup]);
 
   return {
-    inventory: mergedInventory,
-    listWineIds: [...listWineIds],
+    listInventory,
+    placedInventory,
     locations,
     filterOptions,
-    activeFilters: { q, type, country, inSetup },
+    activeFilters: { q, type, country, placement },
     setupList,
     activeSetupId: params.setupId,
     setupConfig: setup?.config ?? null,
@@ -91,8 +87,8 @@ export default function Storage({ loaderData }: Route.ComponentProps) {
       <TopBar username={loaderData.username} />
       <div className="p-3 flex flex-col gap-3 flex-1 overflow-hidden">
         <PositionContextProvider
-          inventory={loaderData.inventory}
-          listWineIds={loaderData.listWineIds}
+          listInventory={loaderData.listInventory}
+          placedInventory={loaderData.placedInventory}
           storedPlacements={loaderData.locations}
           activeSetupId={loaderData.activeSetupId}
           filterOptions={loaderData.filterOptions}

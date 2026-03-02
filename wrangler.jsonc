@@ -25,6 +25,10 @@
         "name": "SETUP_STORE",
         "class_name": "StorageSetupStore",
       },
+      {
+        "name": "WINE_STORE",
+        "class_name": "WineInventoryStore",
+      },
     ],
   },
   "migrations": [
@@ -35,6 +39,10 @@
     {
       "tag": "v2",
       "new_sqlite_classes": ["StorageSetupStore"],
+    },
+    {
+      "tag": "v3",
+      "new_sqlite_classes": ["WineInventoryStore"],
     },
   ],
   /**
