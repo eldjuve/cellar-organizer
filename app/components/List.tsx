@@ -1,16 +1,20 @@
 import { usePositionContext } from "./PositionContextProvider";
+import { FilterBar } from "./FilterBar";
 import type { BottlePlacement, WineItem } from "types";
 
 export function List() {
-  const { inventory, storage } = usePositionContext();
+  const { listInventory, storage } = usePositionContext();
   return (
-    <ul className="divide-y divide-ct-border">
-      {inventory.map((wine) => (
-        <li key={wine.iWine}>
-          <WineRow wine={wine} locations={storage[wine.iWine] ?? []} />
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col h-full">
+      <FilterBar />
+      <ul className="divide-y divide-ct-border overflow-y-auto flex-1">
+        {listInventory.map((wine) => (
+          <li key={wine.iWine}>
+            <WineRow wine={wine} locations={storage[wine.iWine] ?? []} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

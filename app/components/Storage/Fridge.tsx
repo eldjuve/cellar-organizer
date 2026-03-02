@@ -23,7 +23,9 @@ export function Fridge({ config }: { config?: ShelfProps[] }) {
       style={{ '--max-capacity': maxCapacity } as CSSProperties}
     >
       {shelfs.map((shelf, index) => (
-        <Shelf options={shelf} shelfId={index + 1} key={index} />
+        <li key={index}>
+          <Shelf options={shelf} shelfId={index + 1} />
+        </li>
       ))}
     </ul>
   );

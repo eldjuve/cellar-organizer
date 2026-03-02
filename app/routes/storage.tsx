@@ -41,7 +41,47 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const userStore = env.BOTTLE_STORE.getByName(username);
   const locations = await userStore.getInventory();
 
-  return { inventory, locations, setupList, activeSetupId: params.setupId, setupConfig: setup?.config ?? null, username };
+  const url = new URL(request.url);
+  const q = url.searchParams.get("q") ?? "";
+  const type = url.searchParams.get("type") ?? "";
+  const country = url.searchParams.get("country") ?? "";
+  const inSetup = url.searchParams.get("inSetup") === "1";
+
+  const filterOptions = {
+    types: [...new Set(inventory.map((w) => w.Type).filter(Boolean))].sort(),
+    countries: [...new Set(inventory.map((w) => w.Country).filter(Boolean))].sort(),
+  };
+
+  const placedInSetup = new Set(
+    Object.entries(locations)
+      .filter(([, placements]) => placements.some((p) => p.setupId === params.setupId))
+      .map(([iWine]) => iWine)
+  );
+
+  let listInventory = inventory;
+  if (inSetup) listInventory = listInventory.filter((w) => placedInSetup.has(w.iWine));
+  if (type) listInventory = listInventory.filter((w) => w.Type === type);
+  if (country) listInventory = listInventory.filter((w) => w.Country === country);
+  if (q) listInventory = listInventory.filter((w) =>
+    `${w.Wine} ${w.Producer}`.toLowerCase().includes(q.toLowerCase())
+  );
+
+  const listWineIds = new Set(listInventory.map((w) => w.iWine));
+
+  const placedWines = inventory.filter((w) => placedInSetup.has(w.iWine) && !listWineIds.has(w.iWine));
+  const mergedInventory = [...listInventory, ...placedWines];
+
+  return {
+    inventory: mergedInventory,
+    listWineIds: [...listWineIds],
+    locations,
+    filterOptions,
+    activeFilters: { q, type, country, inSetup },
+    setupList,
+    activeSetupId: params.setupId,
+    setupConfig: setup?.config ?? null,
+    username,
+  };
 }
 
 
@@ -52,8 +92,11 @@ export default function Storage({ loaderData }: Route.ComponentProps) {
       <div className="p-3 flex flex-col gap-3 flex-1 overflow-hidden">
         <PositionContextProvider
           inventory={loaderData.inventory}
+          listWineIds={loaderData.listWineIds}
           storedPlacements={loaderData.locations}
           activeSetupId={loaderData.activeSetupId}
+          filterOptions={loaderData.filterOptions}
+          activeFilters={loaderData.activeFilters}
         >
           <Columns
             setupList={loaderData.setupList}
