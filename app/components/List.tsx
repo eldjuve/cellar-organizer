@@ -25,7 +25,7 @@ const WineRow = ({
   wine: WineItem;
   locations: BottlePlacement[];
 }) => {
-  const { selectedPosition, selectedWine, setSelectedWine } =
+  const { selectedPosition, selectedWine, selectWine } =
     usePositionContext();
 
   const quantity = Number(wine.Quantity);
@@ -35,7 +35,7 @@ const WineRow = ({
 
   return (
     <button
-      onClick={() => setSelectedWine(wine)}
+      onClick={() => selectWine(wine)}
       disabled={disabled}
       className={`flex items-center px-3 py-2 w-full text-sm text-left transition-colors
         disabled:opacity-45 disabled:cursor-default disabled:pointer-events-none

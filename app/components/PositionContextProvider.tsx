@@ -18,6 +18,7 @@ type ActiveFilters = { q: string; type: string; country: string; placement: "all
 type PositionContext = {
   selectedWine: WineItem | undefined;
   setSelectedWine: (wine: WineItem | undefined) => void;
+  selectWine: (wine: WineItem) => void;
   selectedPosition: BottlePlacement | undefined;
   onSlotSelect: (shelf: number, layer: number, slot: number) => void;
   clearLocation: (placement: BottlePlacement) => void;
@@ -163,6 +164,22 @@ export const PositionContextProvider = ({
   };
 
 
+  const selectWine = (wine: WineItem) => {
+    if (
+      selectedPosition &&
+      (!storage[wine.iWine] || Number(wine.Quantity) > storage[wine.iWine].length)
+    ) {
+      const { setupId, shelf, layer, slot } = selectedPosition;
+      setStorage((prev) => ({
+        ...prev,
+        [wine.iWine]: [...(prev[wine.iWine] ?? []), { setupId, shelf, layer, slot }],
+      }));
+      send({ type: "addPlacement", iWine: wine.iWine, setupId, shelf, layer, slot });
+      setSelectedPosition(undefined);
+    }
+    setSelectedWine(wine);
+  };
+
   useEffect(() => {
     if (selectedWine) {
       setActiveTab("storage");
@@ -196,6 +213,7 @@ export const PositionContextProvider = ({
         storage,
         selectedWine,
         setSelectedWine,
+        selectWine,
         selectedPosition,
         onSlotSelect,
         clearLocation,

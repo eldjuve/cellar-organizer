@@ -1,8 +1,9 @@
 import { env } from "cloudflare:test";
 import { describe, it, expect, beforeEach } from "vitest";
+import type { BottlePlacement } from "types";
 
 function getStub(name = "test") {
-  return env.BOTTLE_STORE.get(env.BOTTLE_STORE.idFromName(name));
+  return env.WINE_STORE.get(env.WINE_STORE.idFromName(name));
 }
 
 describe("addPlacement / getInventory", () => {
@@ -110,7 +111,7 @@ describe("getInventory", () => {
     await stub.addPlacement("wine1", "setupB", 0, 0, 0);
     const inv = await stub.getInventory();
     expect(inv["wine1"]).toHaveLength(2);
-    const setupIds = inv["wine1"].map((p) => p.setupId).sort();
+    const setupIds = inv["wine1"].map((p: BottlePlacement) => p.setupId).sort();
     expect(setupIds).toEqual(["setupA", "setupB"]);
   });
 });

@@ -45,12 +45,12 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   }
 
   const setupStore = env.SETUP_STORE.getByName(username);
-  const userStore = env.BOTTLE_STORE.getByName(username);
 
-  const [filterOptions, listWines, locations, setupList, setup] = await Promise.all([
+  const [filterOptions, listWines, locations, placedInventory, setupList, setup] = await Promise.all([
     wineStore.getFilterOptions(),
     wineStore.queryInventory(q || undefined, type || undefined, country || undefined),
-    userStore.getInventory(),
+    wineStore.getInventory(),
+    wineStore.getWinesInSetup(params.setupId!),
     setupStore.getSetupList(),
     setupStore.getSetup(params.setupId!),
   ]);
@@ -64,8 +64,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   let listInventory: WineItem[] = listWines;
   if (placement === "active") listInventory = listInventory.filter((w) => placedInSetup.has(w.iWine));
   if (placement === "pending") listInventory = listInventory.filter((w) => (locations[w.iWine]?.length ?? 0) < Number(w.Quantity));
-
-  const placedInventory = await wineStore.getWinesByIds([...placedInSetup]);
 
   return {
     listInventory,
