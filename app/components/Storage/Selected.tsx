@@ -2,6 +2,7 @@ import React from "react";
 import type { BottlePlacement, WineItem } from "types";
 import { usePositionContext } from "../PositionContextProvider";
 import { BarcodeScanner } from "../BarcodeScanner";
+import { CellarTrackerLink } from "../CellarTrackerLink";
 
 export function Display() {
   const { selectedWine } = usePositionContext();
@@ -63,6 +64,7 @@ const WineDisplay = ({ wine }: { wine: WineItem }) => {
           <h2 className="font-semibold text-sm text-ct-primary">
             {wine.Vintage} {wine.Wine}
           </h2>
+          <CellarTrackerLink iWine={wine.iWine} />
           <button
             onClick={() => setSelectedWine(undefined)}
             className="shrink-0 text-ct-muted hover:text-ct-primary transition-colors leading-none"
