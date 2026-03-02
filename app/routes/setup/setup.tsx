@@ -18,7 +18,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   }
 
   if (params.id === "new") {
-    return { id: null, name: "", config: [] as StorageSetup, username };
+    return { id: null, name: "", config: [{ capacity: 8, innerRow: false, layers: 1 }] as StorageSetup, username };
   }
 
   const userStore = env.SETUP_STORE.getByName(username);
@@ -41,6 +41,15 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   const formData = await request.formData();
+  const intent = formData.get("intent");
+
+  if (intent === "delete") {
+    const id = formData.get("id") as string;
+    const userStore = env.SETUP_STORE.getByName(username);
+    userStore.deleteSetup(id);
+    return redirect("/");
+  }
+
   const id = formData.get("id") as string | null;
   const name = formData.get("name") as string;
   const config = JSON.parse(formData.get("config") as string) as StorageSetup;
@@ -86,9 +95,7 @@ export function SetupFridge({ storedConfig, initialName, initialId }: { storedCo
   const maxCapacity = Math.max(...config.map((shelf) => shelf.capacity));
 
   return (
-    <Form method="post" className="flex flex-col gap-4">
-      <input type="hidden" name="id" value={initialId ?? ""} />
-      <input type="hidden" name="config" value={JSON.stringify(config)} />
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3 pb-3 border-b border-ct-border">
         <label className="text-xs font-semibold uppercase tracking-wider text-ct-muted shrink-0">
           Setup name
@@ -96,12 +103,48 @@ export function SetupFridge({ storedConfig, initialName, initialId }: { storedCo
         <input
           type="text"
           name="name"
+          form="setup-form"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="My cellar"
           className="flex-1 text-lg font-semibold bg-ct-bg text-ct-text placeholder:text-ct-muted px-3 py-1.5 rounded border border-ct-border focus:outline-none focus:border-ct-primary transition"
         />
-        <button type="submit" className="button-primary shrink-0">Save</button>
+        <Form id="setup-form" method="post">
+          <input type="hidden" name="id" value={initialId ?? ""} />
+          <input type="hidden" name="config" value={JSON.stringify(config)} />
+          <button type="submit" name="intent" value="save" aria-label="Save setup"
+            className="button-primary shrink-0 px-2 py-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+          </button>
+        </Form>
+        {initialId && (
+          <Form method="post">
+            <input type="hidden" name="intent" value="delete" />
+            <input type="hidden" name="id" value={initialId} />
+            <button
+              type="submit"
+              aria-label="Delete setup"
+              className="rounded border border-red-300 text-red-500 hover:bg-red-50 px-2 py-1.5 transition-colors"
+              onClick={(e) => {
+                if (!window.confirm("Delete this setup? This cannot be undone.")) {
+                  e.preventDefault();
+                }
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6"/>
+                <path d="M14 11v6"/>
+                <path d="M9 6V4h6v2"/>
+              </svg>
+            </button>
+          </Form>
+        )}
       </div>
       <ul className="flex flex-col justify-center overflow-x-auto divide-y divide-ct-border" style={{ '--max-capacity': maxCapacity } as CSSProperties}>
         {config.map((layers, index) => (
@@ -117,7 +160,7 @@ export function SetupFridge({ storedConfig, initialName, initialId }: { storedCo
       >
         + New shelf
       </button>
-    </Form>
+    </div>
   );
 }
 

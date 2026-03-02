@@ -89,6 +89,10 @@ export class StorageSetupStore extends DurableObject<Env> {
     ];
   }
 
+  deleteSetup(id: string): void {
+    this.ctx.storage.sql.exec("DELETE FROM setups WHERE id = ?", id);
+  }
+
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get("Upgrade") !== "websocket") {
       return new Response("Expected WebSocket", { status: 426 });
