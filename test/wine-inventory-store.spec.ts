@@ -375,6 +375,7 @@ describe("user isolation", () => {
   it("alice's placements are not visible to bob", async () => {
     const alice = getUserStub("alice-wines-4");
     const bob = getUserStub("bob-wines-4");
+    await alice.setInventory([makeWine({ iWine: "wine1", Wine: "A", Producer: "P" })]);
     await alice.addPlacement("wine1", "setup1", 0, 0, 0);
     const bobInventory = await bob.getInventory();
     expect(bobInventory).toEqual({});
@@ -383,6 +384,7 @@ describe("user isolation", () => {
   it("bob's placement cannot remove alice's placement", async () => {
     const alice = getUserStub("alice-wines-5");
     const bob = getUserStub("bob-wines-5");
+    await alice.setInventory([makeWine({ iWine: "wine1", Wine: "A", Producer: "P" })]);
     await alice.addPlacement("wine1", "setup1", 0, 0, 0);
     await bob.removePlacement("wine1", "setup1", 0, 0, 0); // operates on bob's empty store
     const aliceInventory = await alice.getInventory();
@@ -458,6 +460,25 @@ describe("queryInventory — placement filter", () => {
     expect(resultAll).toHaveLength(2);
     const resultOmitted = await stub.queryInventory();
     expect(resultOmitted).toHaveLength(2);
+  });
+});
+
+describe("addPlacement — quantity cap", () => {
+  it("returns ok:true for valid placements and ok:false when quantity is exceeded", async () => {
+    const stub = getStub("placement-qty-cap");
+    await stub.setInventory([
+      makeWine({ iWine: "1", Wine: "A", Producer: "P", Quantity: "2" }),
+    ]);
+    expect(await stub.addPlacement("1", "setup-a", 0, 0, 0)).toEqual({ ok: true });
+    expect(await stub.addPlacement("1", "setup-a", 0, 0, 1)).toEqual({ ok: true });
+    expect(await stub.addPlacement("1", "setup-a", 0, 0, 2)).toEqual({ ok: false, error: "placement failed" });
+    const inventory = await stub.getInventory();
+    expect(inventory["1"]).toHaveLength(2);
+  });
+
+  it("returns ok:false when wine does not exist in inventory", async () => {
+    const stub = getStub("placement-not-found");
+    expect(await stub.addPlacement("ghost", "setup-a", 0, 0, 0)).toEqual({ ok: false, error: "placement failed" });
   });
 });
 

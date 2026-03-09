@@ -255,11 +255,20 @@ export class WineInventoryStore extends DurableObject<Env> {
     return { types, countries };
   }
 
-  addPlacement(iWine: string, setupId: string, shelf: number, layer: number, slot: number) {
-    this.ctx.storage.sql.exec(
-      "INSERT OR IGNORE INTO placements (iWine, setup_id, shelf, layer, slot) VALUES (?, ?, ?, ?, ?)",
-      iWine, setupId, shelf, layer, slot,
-    );
+  addPlacement(iWine: string, setupId: string, shelf: number, layer: number, slot: number): { ok: true } | { ok: false; error: string } {
+    try {
+      const cursor = this.ctx.storage.sql.exec(
+        `INSERT OR IGNORE INTO placements (iWine, setup_id, shelf, layer, slot)
+         SELECT ?, ?, ?, ?, ?
+         WHERE (SELECT COUNT(*) FROM placements WHERE iWine = ?)
+             < (SELECT quantity FROM wines WHERE iWine = ?)`,
+        iWine, setupId, shelf, layer, slot, iWine, iWine,
+      );
+      if (cursor.rowsWritten === 0) return { ok: false, error: "placement failed" };
+    } catch {
+      return { ok: false, error: "placement failed" };
+    }
+    return { ok: true };
   }
 
   removePlacement(iWine: string, setupId: string, shelf: number, layer: number, slot: number) {
@@ -325,11 +334,16 @@ export class WineInventoryStore extends DurableObject<Env> {
       case "getInventory":
         ws.send(JSON.stringify({ type: "inventory", data: this.getInventory() }));
         break;
-      case "addPlacement":
-        this.addPlacement(parsed.iWine, parsed.setupId, parsed.shelf, parsed.layer, parsed.slot);
-        this.broadcast(ws, JSON.stringify({ type: "placementAdded", iWine: parsed.iWine, setupId: parsed.setupId, shelf: parsed.shelf, layer: parsed.layer, slot: parsed.slot }));
-        ws.send(JSON.stringify({ type: "ack" }));
+      case "addPlacement": {
+        const result = this.addPlacement(parsed.iWine, parsed.setupId, parsed.shelf, parsed.layer, parsed.slot);
+        if (result.ok) {
+          this.broadcast(ws, JSON.stringify({ type: "placementAdded", iWine: parsed.iWine, setupId: parsed.setupId, shelf: parsed.shelf, layer: parsed.layer, slot: parsed.slot }));
+          ws.send(JSON.stringify({ type: "ack" }));
+        } else {
+          ws.send(JSON.stringify({ type: "error", error: result.error }));
+        }
         break;
+      }
       case "removePlacement":
         this.removePlacement(parsed.iWine, parsed.setupId, parsed.shelf, parsed.layer, parsed.slot);
         this.broadcast(ws, JSON.stringify({ type: "placementRemoved", iWine: parsed.iWine, setupId: parsed.setupId, shelf: parsed.shelf, layer: parsed.layer, slot: parsed.slot }));
