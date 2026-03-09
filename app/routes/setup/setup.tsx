@@ -164,7 +164,7 @@ function ShelfOptions({
   return (
     <>
       <div className="flex gap-4 overflow-hidden">
-        <div className="grow-1 overflow-hidden">
+        <div className="grow overflow-hidden">
           <div className="flex flex-col">
             <Shelf options={options} shelfId={id} />
             <div className="flex gap-8 justify-center items-center mt-3">
@@ -184,7 +184,7 @@ function ShelfOptions({
                 <label className="text-sm flex items-center gap-1 text-ct-muted">
                   <input
                     type="checkbox"
-                    className="mr-1 accent-[#8E2029]"
+                    className="mr-1 accent-ct-primary"
                     checked={options.innerRow}
                     onChange={(e) =>
                       onChange(id, { ...options, innerRow: e.target.checked })
