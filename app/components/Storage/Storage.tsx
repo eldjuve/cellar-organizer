@@ -21,6 +21,18 @@ export const useStorageContext = () => {
 };
 
 
+function countWineInMatrix(matrix: InventoryMatrix, iWine: string): number {
+  let count = 0;
+  for (const layers of Object.values(matrix)) {
+    for (const slots of Object.values(layers)) {
+      for (const wine of Object.values(slots)) {
+        if (wine?.iWine === iWine) count++;
+      }
+    }
+  }
+  return count;
+}
+
 export function StorageView({ setupId, config, winesInCurrentSetup }: { setupId: string; config?: ShelfProps[]; winesInCurrentSetup: InventoryMatrix }) {
   const { selectedWine, setSelectedWineId, setSelectedPosition } = useAppContext();
   const fetcher = useFetcher();
@@ -30,7 +42,6 @@ export function StorageView({ setupId, config, winesInCurrentSetup }: { setupId:
   useEffect(() => {
     setWinesInSetup(winesInCurrentSetup);
   }, [winesInCurrentSetup]);
-
 
   const removeFromInventory = (shelf: number, layer: number, slot: number) => {
     const iWine = winesInSetup[shelf]?.[layer]?.[slot]?.iWine;
@@ -63,6 +74,9 @@ export function StorageView({ setupId, config, winesInCurrentSetup }: { setupId:
       }
       setSelectedWineId(wineAtPosition.iWine);
     } else if (selectedWine) {
+      const currentSetupCount = countWineInMatrix(winesInSetup, selectedWine.iWine);
+      const otherSetupCount = selectedWine.placements?.filter(p => p.setupId !== setupId).length ?? 0;
+      if (currentSetupCount + otherSetupCount >= Number(selectedWine.Quantity)) return;
       setWinesInSetup(prev => ({
         ...prev,
         [shelf]: { ...prev[shelf], [layer]: { ...prev[shelf]?.[layer], [slot]: selectedWine } },

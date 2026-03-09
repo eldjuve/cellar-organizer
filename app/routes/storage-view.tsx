@@ -19,10 +19,9 @@ export async function action({ request, params }: Route.ActionArgs) {
   const slot = Number(formData.get("slot"));
   const wineStore = env.WINE_STORE.getByName(username);
   if (intent === "add") {
-    await wineStore.addPlacement(iWine, params.setupId!, shelf, layer, slot);
-  } else {
-    await wineStore.removePlacement(iWine, params.setupId!, shelf, layer, slot);
+    return await wineStore.addPlacement(iWine, params.setupId!, shelf, layer, slot);
   }
+  await wineStore.removePlacement(iWine, params.setupId!, shelf, layer, slot);
   return { ok: true };
 }
 
