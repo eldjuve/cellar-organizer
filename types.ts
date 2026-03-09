@@ -71,6 +71,14 @@ export type WineItem = {
 export type BottlePlacement = { setupId: string; shelf: number; layer: number; slot: number };
 export type BottlePlacements = { [iWine: string]: BottlePlacement[] };
 
+export type InventoryMatrix = {
+  [shelf: number]: {
+    [layer: number]: {
+      [slot: number]: WineItem;
+    };
+  };
+};
+
 export type ShelfProps = {
   capacity: number;
   innerRow: boolean;

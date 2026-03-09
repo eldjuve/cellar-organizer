@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { createRequestHandler } from "react-router";
-import type { BottlePlacement, BottlesClientMessage, BottlePlacements, SetupsClientMessage, SetupListItem, StorageSetup, WineItem } from "types";
+import type { BottlePlacement, BottlesClientMessage, BottlePlacements, InventoryMatrix, SetupsClientMessage, SetupListItem, StorageSetup, WineItem } from "types";
 import { getSession } from "../app/sessions.server";
 
 declare module "react-router" {
@@ -185,7 +185,7 @@ export class WineInventoryStore extends DurableObject<Env> {
     return rows[0].n;
   }
 
-  queryInventory(q?: string, type?: string, country?: string): WineItem[] {
+  queryInventory(q?: string, type?: string, country?: string, placement?: "all" | "active" | "pending", setupId?: string): WineItem[] {
     let sql = `SELECT w.data, json_group_array(
       CASE WHEN p.setup_id IS NULL THEN NULL
       ELSE json_object('setupId', p.setup_id, 'shelf', p.shelf, 'layer', p.layer, 'slot', p.slot)
@@ -198,6 +198,13 @@ export class WineInventoryStore extends DurableObject<Env> {
     if (type)    { sql += " AND w.type = ?";                                   params.push(type); }
     if (country) { sql += " AND w.country = ?";                                params.push(country); }
     if (q)       { sql += " AND (w.wine LIKE ? OR w.producer LIKE ?)";         params.push(`%${q}%`, `%${q}%`); }
+    if (placement === "active" && setupId) {
+      sql += " AND EXISTS (SELECT 1 FROM placements p2 WHERE p2.iWine = w.iWine AND p2.setup_id = ?)";
+      params.push(setupId);
+    }
+    if (placement === "pending") {
+      sql += " AND (SELECT COUNT(*) FROM placements p2 WHERE p2.iWine = w.iWine) < w.quantity";
+    }
     sql += " GROUP BY w.iWine";
     return [...this.ctx.storage.sql.exec<{ data: string; placements_json: string }>(sql, ...params)]
       .map((r) => {
@@ -260,13 +267,21 @@ export class WineInventoryStore extends DurableObject<Env> {
     }, {} as BottlePlacements);
   }
 
-  getWinesInSetup(setupId: string): WineItem[] {
-    return [...this.ctx.storage.sql.exec<{ data: string }>(
-      `SELECT w.data FROM wines w
+  getWinesInSetup(setupId: string): InventoryMatrix {
+    type Row = { data: string; shelf: number; layer: number; slot: number };
+    const rows = [...this.ctx.storage.sql.exec<Row>(
+      `SELECT w.data, p.shelf, p.layer, p.slot FROM wines w
        JOIN placements p ON w.iWine = p.iWine
        WHERE p.setup_id = ?`,
       setupId,
-    )].map(r => JSON.parse(r.data));
+    )];
+    const matrix: InventoryMatrix = {};
+    for (const { data, shelf, layer, slot } of rows) {
+      matrix[shelf] ??= {};
+      matrix[shelf][layer] ??= {};
+      matrix[shelf][layer][slot] = JSON.parse(data);
+    }
+    return matrix;
   }
 
   private broadcast(sender: WebSocket, message: string) {

@@ -1,18 +1,12 @@
-import type { Route } from "./+types/storage";
+import type { Route } from "./+types/index";
 import { env } from "workers/store";
 
-import {
-  PositionContextProvider,
-  usePositionContext,
-} from "../components/PositionContextProvider";
+import { AppContextProvider, useAppContext } from "../components/AppContextProvider";
 import { List } from "~/components/List";
 import { fetchWineData } from "~/utils.server";
 import { getSession } from "~/sessions.server";
-import { redirect, useFetcher } from "react-router";
-import { StorageView } from "~/components/Storage/Storage";
-import { SetupSelector } from "~/components/SetupSelector";
+import { Outlet, redirect, useFetcher } from "react-router";
 import { TopBar } from "~/components/TopBar";
-import type { SetupListItem, StorageSetup, WineItem } from "types";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -44,40 +38,18 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     await wineStore.setInventory(all);
   }
 
-  const setupStore = env.SETUP_STORE.getByName(username);
-
-  const [filterOptions, listWines, locations, placedInventory, setupList, setup] = await Promise.all([
+  const [filterOptions, listInventory] = await Promise.all([
     wineStore.getFilterOptions(),
-    wineStore.queryInventory(q || undefined, type || undefined, country || undefined),
-    wineStore.getInventory(),
-    wineStore.getWinesInSetup(params.setupId!),
-    setupStore.getSetupList(),
-    setupStore.getSetup(params.setupId!),
+    wineStore.queryInventory(q || undefined, type || undefined, country || undefined, placement, params.setupId),
   ]);
-
-  const placedInSetup = new Set(
-    Object.entries(locations)
-      .filter(([, ps]) => ps.some((p) => p.setupId === params.setupId))
-      .map(([iWine]) => iWine)
-  );
-
-  let listInventory: WineItem[] = listWines;
-  if (placement === "active") listInventory = listInventory.filter((w) => placedInSetup.has(w.iWine));
-  if (placement === "pending") listInventory = listInventory.filter((w) => (locations[w.iWine]?.length ?? 0) < Number(w.Quantity));
 
   return {
     listInventory,
-    placedInventory,
-    locations,
     filterOptions,
     activeFilters: { q, type, country, placement },
-    setupList,
-    activeSetupId: params.setupId,
-    setupConfig: setup?.config ?? null,
     username,
   };
 }
-
 
 export async function action({ request }: Route.ActionArgs) {
   const session = await getSession(request.headers.get("Cookie"));
@@ -95,6 +67,7 @@ export async function action({ request }: Route.ActionArgs) {
 export default function Storage({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher();
   const isRefetching = fetcher.state !== "idle";
+
   return (
     <main className="flex flex-col h-dvh overflow-hidden bg-ct-bg pb-[env(safe-area-inset-bottom)]">
       <TopBar
@@ -103,55 +76,36 @@ export default function Storage({ loaderData }: Route.ComponentProps) {
         isRefetching={isRefetching}
       />
       <div className="p-3 flex flex-col gap-3 flex-1 overflow-hidden">
-        <PositionContextProvider
-          listInventory={loaderData.listInventory}
-          placedInventory={loaderData.placedInventory}
-          storedPlacements={loaderData.locations}
-          activeSetupId={loaderData.activeSetupId}
-          filterOptions={loaderData.filterOptions}
-          activeFilters={loaderData.activeFilters}
-        >
-          <Columns
-            setupList={loaderData.setupList}
-            activeSetupId={loaderData.activeSetupId}
-            setupConfig={loaderData.setupConfig}
-          />
-          <MobileMenu />
-        </PositionContextProvider>
+        <AppContextProvider>
+          <StorageLayout loaderData={loaderData} />
+        </AppContextProvider>
       </div>
     </main>
   );
 }
 
-const Columns = ({
-  setupList,
-  activeSetupId,
-  setupConfig,
-}: {
-  setupList: SetupListItem[];
-  activeSetupId: string;
-  setupConfig: StorageSetup | null;
-}) => {
-  const { activeTab } = usePositionContext();
+const StorageLayout = ({ loaderData }: { loaderData: Route.ComponentProps["loaderData"] }) => {
+  const { activeTab } = useAppContext();
+
   return (
-    <div className="flex h-full gap-3 overflow-hidden">
-      <aside
-        className={`flex-1 overflow-y-auto rounded border border-ct-border bg-ct-surface ${activeTab === "storage" ? "max-md:hidden" : ""}`}
-      >
-        <List />
-      </aside>
-      <aside
-        className={`flex-1 overflow-hidden flex flex-col gap-2 ${activeTab === "list" ? "max-md:hidden" : ""}`}
-      >
-        <SetupSelector setupList={setupList} activeSetupId={activeSetupId} />
-        <StorageView config={setupConfig ?? undefined} />
-      </aside>
-    </div>
+    <>
+      <div className="flex h-full gap-3 overflow-hidden">
+        <aside className={`flex-1 overflow-y-auto rounded border border-ct-border bg-ct-surface ${activeTab === "storage" ? "max-md:hidden" : ""}`}>
+          <List
+            listInventory={loaderData.listInventory}
+            filterOptions={loaderData.filterOptions}
+            activeFilters={loaderData.activeFilters}
+          />
+        </aside>
+        <Outlet />
+      </div>
+      <MobileMenu />
+    </>
   );
 };
 
 const MobileMenu = () => {
-  const { activeTab, toggleTab } = usePositionContext();
+  const { activeTab, toggleTab } = useAppContext();
 
   return (
     <nav className="mobile-menu flex w-full justify-center md:hidden">

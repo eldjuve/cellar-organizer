@@ -1,4 +1,3 @@
-import { PositionContextProvider } from "~/components/PositionContextProvider";
 import { Shelf } from "~/components/Storage/Fridge";
 import { getSession } from "~/sessions.server";
 import type { Route } from "./+types/setup";
@@ -67,9 +66,7 @@ export default function Component({ loaderData }: Route.ComponentProps) {
       <TopBar username={loaderData.username} />
       <div className="flex flex-col items-center gap-4 p-6">
         <div className="w-full max-w-5xl rounded-xl border border-ct-border bg-ct-surface p-6 shadow-sm">
-          <PositionContextProvider storedPlacements={{}} listInventory={[]} placedInventory={[]}>
-            <SetupFridge storedConfig={loaderData.config} initialName={loaderData.name} initialId={loaderData.id} />
-          </PositionContextProvider>
+          <SetupFridge storedConfig={loaderData.config} initialName={loaderData.name} initialId={loaderData.id} />
         </div>
       </div>
     </div>

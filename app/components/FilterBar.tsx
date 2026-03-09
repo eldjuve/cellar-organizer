@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { usePositionContext } from "./PositionContextProvider";
 
-export function FilterBar() {
-  const { listInventory, filterOptions, activeFilters } = usePositionContext();
-  const [searchParams, setSearchParams] = useSearchParams();
+type FilterOptions = { types: string[]; countries: string[] };
+type ActiveFilters = { q: string; type: string; country: string; placement: "all" | "active" | "pending" };
+
+export function FilterBar({ filterOptions, activeFilters, listCount }: {
+  filterOptions: FilterOptions;
+  activeFilters: ActiveFilters;
+  listCount: number;
+}) {
+  const [, setSearchParams] = useSearchParams();
   const [localQ, setLocalQ] = useState(activeFilters.q);
 
   // Sync localQ when activeFilters.q changes (e.g. back/forward nav)
@@ -118,7 +123,7 @@ export function FilterBar() {
           Clear
         </button>
       )}
-      <span className="ml-auto text-ct-muted tabular-nums">{listInventory.length} wines</span>
+      <span className="ml-auto text-ct-muted tabular-nums">{listCount} wines</span>
     </div>
   );
 }

@@ -301,17 +301,16 @@ describe("getWinesInSetup", () => {
     ]);
     await stub.addPlacement("1", "setup-a", 0, 0, 0);
     const result = await stub.getWinesInSetup("setup-a");
-    expect(result).toHaveLength(1);
-    expect(result[0].iWine).toBe("1");
+    expect(result[0][0][0].iWine).toBe("1");
   });
 
-  it("returns empty array when no bottles are placed in the setup", async () => {
+  it("returns empty matrix when no bottles are placed in the setup", async () => {
     const stub = getStub("inwinesetup-empty");
     await stub.setInventory([
       makeWine({ iWine: "1", Wine: "Wine A", Producer: "P" }),
     ]);
     const result = await stub.getWinesInSetup("no-such-setup");
-    expect(result).toEqual([]);
+    expect(result).toEqual({});
   });
 
   it("returns only wines placed in the requested setup, not others", async () => {
@@ -323,8 +322,8 @@ describe("getWinesInSetup", () => {
     await stub.addPlacement("1", "setup-x", 0, 0, 0);
     await stub.addPlacement("2", "setup-y", 0, 0, 0);
     const result = await stub.getWinesInSetup("setup-x");
-    expect(result).toHaveLength(1);
-    expect(result[0].iWine).toBe("1");
+    expect(result[0][0][0].iWine).toBe("1");
+    expect(result[0][0][1]).toBeUndefined();
   });
 
   it("returns multiple wines when multiple are placed in the same setup", async () => {
@@ -337,9 +336,8 @@ describe("getWinesInSetup", () => {
     await stub.addPlacement("1", "setup-z", 0, 0, 0);
     await stub.addPlacement("2", "setup-z", 0, 0, 1);
     const result = await stub.getWinesInSetup("setup-z");
-    expect(result).toHaveLength(2);
-    const ids = result.map((w) => w.iWine).sort();
-    expect(ids).toEqual(["1", "2"]);
+    expect(result[0][0][0].iWine).toBe("1");
+    expect(result[0][0][1].iWine).toBe("2");
   });
 });
 
@@ -400,6 +398,66 @@ describe("user isolation", () => {
     const { types, countries } = await bob.getFilterOptions();
     expect(types).toEqual([]);
     expect(countries).toEqual([]);
+  });
+});
+
+describe("queryInventory — placement filter", () => {
+  it('placement="active" returns only wines placed in the given setup', async () => {
+    const stub = getStub("placement-active-basic");
+    await stub.setInventory([
+      makeWine({ iWine: "1", Wine: "A", Producer: "P" }),
+      makeWine({ iWine: "2", Wine: "B", Producer: "P" }),
+    ]);
+    await stub.addPlacement("1", "setup-a", 0, 0, 0);
+    const result = await stub.queryInventory(undefined, undefined, undefined, "active", "setup-a");
+    expect(result).toHaveLength(1);
+    expect(result[0].iWine).toBe("1");
+  });
+
+  it('placement="active" returns empty when no wines placed in setup', async () => {
+    const stub = getStub("placement-active-empty");
+    await stub.setInventory([
+      makeWine({ iWine: "1", Wine: "A", Producer: "P" }),
+    ]);
+    const result = await stub.queryInventory(undefined, undefined, undefined, "active", "setup-x");
+    expect(result).toEqual([]);
+  });
+
+  it('placement="pending" returns wines where placement count < Quantity', async () => {
+    const stub = getStub("placement-pending-basic");
+    await stub.setInventory([
+      makeWine({ iWine: "1", Wine: "A", Producer: "P", Quantity: "3" }),
+      makeWine({ iWine: "2", Wine: "B", Producer: "P", Quantity: "1" }),
+    ]);
+    await stub.addPlacement("1", "setup-a", 0, 0, 0); // 1 placed out of 3 → pending
+    await stub.addPlacement("2", "setup-a", 0, 0, 1); // 1 placed out of 1 → fully placed
+    const result = await stub.queryInventory(undefined, undefined, undefined, "pending");
+    expect(result).toHaveLength(1);
+    expect(result[0].iWine).toBe("1");
+  });
+
+  it('placement="pending" excludes wines fully placed (placements == Quantity)', async () => {
+    const stub = getStub("placement-pending-full");
+    await stub.setInventory([
+      makeWine({ iWine: "1", Wine: "A", Producer: "P", Quantity: "2" }),
+    ]);
+    await stub.addPlacement("1", "setup-a", 0, 0, 0);
+    await stub.addPlacement("1", "setup-a", 0, 0, 1);
+    const result = await stub.queryInventory(undefined, undefined, undefined, "pending");
+    expect(result).toEqual([]);
+  });
+
+  it('placement="all" (or omitted) returns all wines regardless of placements', async () => {
+    const stub = getStub("placement-all");
+    await stub.setInventory([
+      makeWine({ iWine: "1", Wine: "A", Producer: "P" }),
+      makeWine({ iWine: "2", Wine: "B", Producer: "P" }),
+    ]);
+    await stub.addPlacement("1", "setup-a", 0, 0, 0);
+    const resultAll = await stub.queryInventory(undefined, undefined, undefined, "all");
+    expect(resultAll).toHaveLength(2);
+    const resultOmitted = await stub.queryInventory();
+    expect(resultOmitted).toHaveLength(2);
   });
 });
 

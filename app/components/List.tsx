@@ -1,16 +1,22 @@
-import { usePositionContext } from "./PositionContextProvider";
+import { useAppContext } from "./AppContextProvider";
 import { FilterBar } from "./FilterBar";
-import type { BottlePlacement, WineItem } from "types";
+import type { WineItem } from "types";
 
-export function List() {
-  const { listInventory, storage } = usePositionContext();
+type FilterOptions = { types: string[]; countries: string[] };
+type ActiveFilters = { q: string; type: string; country: string; placement: "all" | "active" | "pending" };
+
+export function List({ listInventory, filterOptions, activeFilters }: {
+  listInventory: WineItem[];
+  filterOptions: FilterOptions;
+  activeFilters: ActiveFilters;
+}) {
   return (
     <div className="flex flex-col h-full">
-      <FilterBar />
+      <FilterBar filterOptions={filterOptions} activeFilters={activeFilters} listCount={listInventory.length} />
       <ul className="divide-y divide-ct-border overflow-y-auto flex-1">
         {listInventory.map((wine) => (
           <li key={wine.iWine}>
-            <WineRow wine={wine} locations={storage[wine.iWine] ?? []} />
+            <WineRow wine={wine} />
           </li>
         ))}
       </ul>
@@ -20,22 +26,25 @@ export function List() {
 
 const WineRow = ({
   wine,
-  locations,
 }: {
   wine: WineItem;
-  locations: BottlePlacement[];
 }) => {
-  const { selectedPosition, selectedWine, selectWine } =
-    usePositionContext();
+  const { selectedWine, setSelectedWine, selectedPosition, setSelectedPosition } = useAppContext();
 
+  const locations = wine.placements ?? [];
   const quantity = Number(wine.Quantity);
   const disabled = !!(selectedPosition && locations.length === quantity);
   const isSelected = selectedWine?.iWine === wine.iWine;
   const fullyStored = locations.length === quantity;
 
+  const handleClick = () => {
+    if (selectedPosition) setSelectedPosition(undefined);
+    setSelectedWine(wine);
+  };
+
   return (
     <button
-      onClick={() => selectWine(wine)}
+      onClick={handleClick}
       disabled={disabled}
       className={`flex items-center px-3 py-2 w-full text-sm text-left transition-colors
         disabled:opacity-45 disabled:cursor-default disabled:pointer-events-none

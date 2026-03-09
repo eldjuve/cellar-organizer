@@ -1,12 +1,13 @@
 import React from "react";
 import type { BottlePlacement, WineItem } from "types";
-import { usePositionContext } from "../PositionContextProvider";
+import { useAppContext } from "../AppContextProvider";
+import { useStorageContext } from "./Storage";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { CellarTrackerLink } from "../CellarTrackerLink";
 import { BarcodeScanIcon } from "../icons";
 
 export function Display() {
-  const { selectedWine } = usePositionContext();
+  const { selectedWine } = useAppContext();
 
   if (!selectedWine) {
     return <WinePosition />;
@@ -16,7 +17,7 @@ export function Display() {
 }
 
 const WinePosition = () => {
-  const { selectedPosition, setSelectedWine } = usePositionContext();
+  const { selectedPosition, setSelectedWine } = useAppContext();
   const [scanning, setScanning] = React.useState(false);
 
   if (!selectedPosition) return null;
@@ -45,9 +46,20 @@ const WinePosition = () => {
 };
 
 const WineDisplay = ({ wine }: { wine: WineItem }) => {
-  const { storage, setSelectedWine } = usePositionContext();
+  const { inventory } = useStorageContext();
+  const { setSelectedWine } = useAppContext();
 
-  const locations = storage[wine.iWine] || [];
+  const locations: BottlePlacement[] = [];
+  
+  for (const [shelf, layers] of Object.entries(inventory)) {
+    for (const [layer, slots] of Object.entries(layers)) {
+      for (const [slot, w] of Object.entries(slots)) {
+        if (w.iWine === wine.iWine) {
+          locations.push({ setupId: "", shelf: Number(shelf), layer: Number(layer), slot: Number(slot) });
+        }
+      }
+    }
+  }
 
   return (
     <div className="flex w-full justify-between px-4 py-3 gap-4 items-start border-t-2 border-ct-primary bg-ct-primary-light">
@@ -89,12 +101,12 @@ const WineDisplay = ({ wine }: { wine: WineItem }) => {
 };
 
 const LocationDeselector = ({ placement }: { placement: BottlePlacement }) => {
-  const { clearLocation } = usePositionContext();
+  const { removeFromInventory } = useStorageContext();
 
   return (
     <button
       className="flex items-center gap-1 rounded border border-ct-border bg-ct-surface text-ct-muted text-xs px-2 py-0.5 hover:border-ct-primary transition-colors"
-      onClick={() => clearLocation(placement)}
+      onClick={() => removeFromInventory(placement.shelf, placement.layer, placement.slot)}
     >
       <LocationBadge placement={placement} />
       <span className="text-ct-primary">×</span>

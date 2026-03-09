@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { ShelfProps } from "types";
-import { usePositionContext } from "../PositionContextProvider";
+import { useAppContext } from "../AppContextProvider";
+import { useStorageContext } from "./Storage";
 
 const defaultConfig = [
   { capacity: 12, innerRow: true, layers: 2 },
@@ -76,10 +77,10 @@ function Layer({
 }
 
 function Slot({ shelf, layer, slot }: { shelf: number; layer: number; slot: number }) {
-  const { onSlotSelect, inventoryByLocation, selectedWine, activeSetupId } =
-    usePositionContext();
+  const { onSlotSelect, inventory } = useStorageContext();
+  const { selectedWine } = useAppContext();
 
-  const wine = inventoryByLocation[activeSetupId ?? ""]?.[shelf]?.[layer]?.[slot];
+  const wine = inventory[shelf]?.[layer]?.[slot];
 
   const handleSelect = () => {
     onSlotSelect(shelf, layer, slot);
