@@ -11,4 +11,5 @@ export default [
     route(":id", "routes/setup/setup.tsx"),
   ]),
   route("api/barcode", "routes/api.barcode.ts"),
+  route("api/wine", "routes/api.wine.ts"),
 ] satisfies RouteConfig;

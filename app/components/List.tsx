@@ -29,7 +29,7 @@ const WineRow = ({
 }: {
   wine: WineItem;
 }) => {
-  const { selectedWine, setSelectedWine, selectedPosition, setSelectedPosition } = useAppContext();
+  const { selectedWine, setSelectedWineId, selectedPosition, setSelectedPosition } = useAppContext();
 
   const locations = wine.placements ?? [];
   const quantity = Number(wine.Quantity);
@@ -39,7 +39,7 @@ const WineRow = ({
 
   const handleClick = () => {
     if (selectedPosition) setSelectedPosition(undefined);
-    setSelectedWine(wine);
+    setSelectedWineId(wine.iWine);
   };
 
   return (

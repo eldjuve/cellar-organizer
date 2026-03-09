@@ -22,7 +22,7 @@ export const useStorageContext = () => {
 
 
 export function StorageView({ setupId, config, winesInCurrentSetup }: { setupId: string; config?: ShelfProps[]; winesInCurrentSetup: InventoryMatrix }) {
-  const { selectedWine, setSelectedWine, setSelectedPosition } = useAppContext();
+  const { selectedWine, setSelectedWineId, setSelectedPosition } = useAppContext();
   const fetcher = useFetcher();
 
   const [winesInSetup, setWinesInSetup] = useState<InventoryMatrix>(winesInCurrentSetup);
@@ -61,7 +61,7 @@ export function StorageView({ setupId, config, winesInCurrentSetup }: { setupId:
           { method: "POST" },
         );
       }
-      setSelectedWine(wineAtPosition);
+      setSelectedWineId(wineAtPosition.iWine);
     } else if (selectedWine) {
       setWinesInSetup(prev => ({
         ...prev,
@@ -73,7 +73,7 @@ export function StorageView({ setupId, config, winesInCurrentSetup }: { setupId:
       );
     } else {
       setSelectedPosition({ setupId, shelf, layer, slot });
-      setSelectedWine(undefined);
+      setSelectedWineId(undefined);
     }
   };
 

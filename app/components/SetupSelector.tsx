@@ -11,7 +11,7 @@ export const SetupSelector = ({
 }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { setSelectedWine } = useAppContext();
+  const { setSelectedWineId } = useAppContext();
 
   return (
     <div className="flex items-center gap-2">
@@ -20,7 +20,7 @@ export const SetupSelector = ({
           <select
             value={activeSetupId}
             onChange={(e) => {
-              setSelectedWine(undefined);
+              setSelectedWineId(undefined);
               const qs = searchParams.toString();
               navigate(`/${e.target.value}${qs ? `?${qs}` : ""}`);
             }}

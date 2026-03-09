@@ -17,7 +17,7 @@ export function Display() {
 }
 
 const WinePosition = () => {
-  const { selectedPosition, setSelectedWine } = useAppContext();
+  const { selectedPosition, setSelectedWineId } = useAppContext();
   const [scanning, setScanning] = React.useState(false);
 
   if (!selectedPosition) return null;
@@ -36,7 +36,7 @@ const WinePosition = () => {
         <BarcodeScanner
           onResult={(wine) => {
             setScanning(false);
-            if (wine) setSelectedWine(wine);
+            if (wine) setSelectedWineId(wine.iWine);
           }}
           onClose={() => setScanning(false)}
         />
@@ -47,7 +47,7 @@ const WinePosition = () => {
 
 const WineDisplay = ({ wine }: { wine: WineItem }) => {
   const { inventory } = useStorageContext();
-  const { setSelectedWine } = useAppContext();
+  const { setSelectedWineId } = useAppContext();
 
   const locations: BottlePlacement[] = [];
   
@@ -70,7 +70,7 @@ const WineDisplay = ({ wine }: { wine: WineItem }) => {
           </h2>
           <CellarTrackerLink iWine={wine.iWine} />
           <button
-            onClick={() => setSelectedWine(undefined)}
+            onClick={() => setSelectedWineId(undefined)}
             className="shrink-0 text-ct-muted hover:text-ct-primary transition-colors leading-none"
             aria-label="Deselect wine"
           >

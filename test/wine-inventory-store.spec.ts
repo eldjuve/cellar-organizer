@@ -352,14 +352,14 @@ describe("user isolation", () => {
     expect(await bob.queryInventory()).toEqual([]);
   });
 
-  it("bob cannot query alice's wines by id", async () => {
+  it("bob cannot query alice's wine by id", async () => {
     const alice = getUserStub("alice-wines-2");
     const bob = getUserStub("bob-wines-2");
     await alice.setInventory([
       makeWine({ iWine: "secret-1", Wine: "Secret Wine", Producer: "P" }),
     ]);
-    const result = await bob.getWinesByIds(["secret-1"]);
-    expect(result).toEqual([]);
+    const result = await bob.getWineById("secret-1");
+    expect(result).toBeNull();
   });
 
   it("bob cannot find alice's wine by barcode", async () => {
@@ -461,36 +461,39 @@ describe("queryInventory — placement filter", () => {
   });
 });
 
-describe("getWinesByIds", () => {
-  it("returns wines for all requested IDs", async () => {
-    const stub = getStub("byids-basic");
-    await stub.setInventory([
-      makeWine({ iWine: "1", Wine: "A", Producer: "P" }),
-      makeWine({ iWine: "2", Wine: "B", Producer: "P" }),
-      makeWine({ iWine: "3", Wine: "C", Producer: "P" }),
-    ]);
-    const result = await stub.getWinesByIds(["1", "3"]);
-    expect(result).toHaveLength(2);
-    const ids = result.map((w) => w.iWine).sort();
-    expect(ids).toEqual(["1", "3"]);
+describe("getWineById", () => {
+  it("returns null for unknown id", async () => {
+    const stub = getStub("byid-unknown");
+    const result = await stub.getWineById("999");
+    expect(result).toBeNull();
   });
 
-  it("returns empty array for empty ID list", async () => {
-    const stub = getStub("byids-empty");
+  it("returns wine with no placements", async () => {
+    const stub = getStub("byid-no-placements");
     await stub.setInventory([
       makeWine({ iWine: "1", Wine: "A", Producer: "P" }),
     ]);
-    const result = await stub.getWinesByIds([]);
-    expect(result).toEqual([]);
+    const result = await stub.getWineById("1");
+    expect(result).not.toBeNull();
+    expect(result!.iWine).toBe("1");
+    expect(result!.placements).toBeUndefined();
   });
 
-  it("ignores IDs that don't exist", async () => {
-    const stub = getStub("byids-missing");
+  it("returns wine with placements joined", async () => {
+    const stub = getStub("byid-with-placements");
     await stub.setInventory([
       makeWine({ iWine: "1", Wine: "A", Producer: "P" }),
     ]);
-    const result = await stub.getWinesByIds(["1", "999"]);
-    expect(result).toHaveLength(1);
-    expect(result[0].iWine).toBe("1");
+    await stub.addPlacement("1", "setup-a", 0, 0, 0);
+    const result = await stub.getWineById("1");
+    expect(result).not.toBeNull();
+    expect(result!.placements).toHaveLength(1);
+    expect(result!.placements![0]).toEqual({ setupId: "setup-a", shelf: 0, layer: 0, slot: 0 });
+  });
+
+  it("returns null for empty string", async () => {
+    const stub = getStub("byid-empty-string");
+    const result = await stub.getWineById("");
+    expect(result).toBeNull();
   });
 });

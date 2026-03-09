@@ -216,12 +216,25 @@ export class WineInventoryStore extends DurableObject<Env> {
       });
   }
 
-  getWinesByIds(ids: string[]): WineItem[] {
-    if (!ids.length) return [];
-    const placeholders = ids.map(() => "?").join(", ");
-    return [...this.ctx.storage.sql.exec<{ data: string }>(
-      `SELECT data FROM wines WHERE iWine IN (${placeholders})`, ...ids,
-    )].map((r) => JSON.parse(r.data));
+  getWineById(iWine: string): WineItem | null {
+    const rows = [...this.ctx.storage.sql.exec<{ data: string; placements_json: string }>(
+      `SELECT w.data, json_group_array(
+      CASE WHEN p.setup_id IS NULL THEN NULL
+      ELSE json_object('setupId', p.setup_id, 'shelf', p.shelf, 'layer', p.layer, 'slot', p.slot)
+      END
+    ) AS placements_json
+    FROM wines w
+    LEFT JOIN placements p ON w.iWine = p.iWine
+    WHERE w.iWine = ?
+    GROUP BY w.iWine`,
+      iWine,
+    )];
+    if (!rows.length) return null;
+    const wine: WineItem = JSON.parse(rows[0].data);
+    const rawPlacements: (BottlePlacement | null)[] = JSON.parse(rows[0].placements_json);
+    const placements = rawPlacements.filter((p): p is BottlePlacement => p !== null);
+    if (placements.length > 0) wine.placements = placements;
+    return wine;
   }
 
   lookupBarcode(barcode: string): WineItem | null {
