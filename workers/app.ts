@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { createRequestHandler } from "react-router";
-import type { BottlesClientMessage, BottlePlacements, SetupsClientMessage, SetupListItem, StorageSetup, WineItem } from "types";
+import type { BottlePlacement, BottlesClientMessage, BottlePlacements, SetupsClientMessage, SetupListItem, StorageSetup, WineItem } from "types";
 import { getSession } from "../app/sessions.server";
 
 declare module "react-router" {
@@ -186,13 +186,27 @@ export class WineInventoryStore extends DurableObject<Env> {
   }
 
   queryInventory(q?: string, type?: string, country?: string): WineItem[] {
-    let sql = "SELECT data FROM wines WHERE 1=1";
+    let sql = `SELECT w.data, json_group_array(
+      CASE WHEN p.setup_id IS NULL THEN NULL
+      ELSE json_object('setupId', p.setup_id, 'shelf', p.shelf, 'layer', p.layer, 'slot', p.slot)
+      END
+    ) AS placements_json
+    FROM wines w
+    LEFT JOIN placements p ON w.iWine = p.iWine
+    WHERE 1=1`;
     const params: unknown[] = [];
-    if (type)    { sql += " AND type = ?";                           params.push(type); }
-    if (country) { sql += " AND country = ?";                        params.push(country); }
-    if (q)       { sql += " AND (wine LIKE ? OR producer LIKE ?)";   params.push(`%${q}%`, `%${q}%`); }
-    return [...this.ctx.storage.sql.exec<{ data: string }>(sql, ...params)]
-      .map((r) => JSON.parse(r.data));
+    if (type)    { sql += " AND w.type = ?";                                   params.push(type); }
+    if (country) { sql += " AND w.country = ?";                                params.push(country); }
+    if (q)       { sql += " AND (w.wine LIKE ? OR w.producer LIKE ?)";         params.push(`%${q}%`, `%${q}%`); }
+    sql += " GROUP BY w.iWine";
+    return [...this.ctx.storage.sql.exec<{ data: string; placements_json: string }>(sql, ...params)]
+      .map((r) => {
+        const wine: WineItem = JSON.parse(r.data);
+        const rawPlacements: (BottlePlacement | null)[] = JSON.parse(r.placements_json);
+        const placements = rawPlacements.filter((p): p is BottlePlacement => p !== null);
+        if (placements.length > 0) wine.placements = placements;
+        return wine;
+      });
   }
 
   getWinesByIds(ids: string[]): WineItem[] {
