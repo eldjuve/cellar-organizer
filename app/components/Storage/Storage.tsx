@@ -64,6 +64,7 @@ export function StorageView({ setupId, config, inventory: winesInCurrentSetup }:
     } else if (selectedWine) {
       if ((selectedWine.placements?.length ?? 0) >= Number(selectedWine.Quantity)) {
         setSelectedPosition({ setupId, shelf, layer, slot });
+        setSelectedWineId(undefined);
         return;
       }
       setWinesInSetup(prev => ({
