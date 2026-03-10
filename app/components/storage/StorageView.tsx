@@ -13,7 +13,7 @@ export { StorageContext } from "./StorageContext";
 function useConfigSync() {
   const revalidator = useRevalidator();
   useEffect(() => {
-    const es = new EventSource(`/sse/configs?clientId=${clientId}`);
+    const es = new EventSource(`/sse/configs?clientId=${clientId()}`);
     es.onmessage = (e) => {
       const msg = JSON.parse(e.data) as StorageConfigMessage;
       if (msg.type === "configListChanged") revalidator.revalidate();

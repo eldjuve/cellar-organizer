@@ -77,7 +77,7 @@ export async function action({ request }: Route.ActionArgs) {
 function usePlacementsSync() {
   const revalidator = useRevalidator();
   useEffect(() => {
-    const es = new EventSource(`/sse/placements?clientId=${clientId}`);
+    const es = new EventSource(`/sse/placements?clientId=${clientId()}`);
     es.onmessage = (e) => {
       const msg = JSON.parse(e.data) as PlacementMessage;
       if (msg.type === "placementAdded" || msg.type === "placementRemoved") {

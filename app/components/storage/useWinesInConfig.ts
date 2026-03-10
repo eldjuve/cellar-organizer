@@ -17,7 +17,7 @@ export function useWinesInConfig(winesInCurrentConfig: WineMatrix) {
       [shelf]: { ...prev[shelf], [layer]: { ...prev[shelf]?.[layer], [slot]: wine } },
     }));
     fetcher.submit(
-      { intent: "add", iWine: wine.iWine, shelf: String(shelf), layer: String(layer), slot: String(slot), clientId },
+      { intent: "add", iWine: wine.iWine, shelf: String(shelf), layer: String(layer), slot: String(slot), clientId: clientId() },
       { method: "POST" },
     );
   };
@@ -29,7 +29,7 @@ export function useWinesInConfig(winesInCurrentConfig: WineMatrix) {
       return next;
     });
     fetcher.submit(
-      { intent: "remove", iWine, shelf: String(shelf), layer: String(layer), slot: String(slot), clientId },
+      { intent: "remove", iWine, shelf: String(shelf), layer: String(layer), slot: String(slot), clientId: clientId() },
       { method: "POST" },
     );
   };

@@ -125,7 +125,7 @@ export function StorageConfigurator({ storedConfig, initialName, initialId }: { 
         <Form id="setup-form" method="post">
           <input type="hidden" name="id" value={initialId ?? ""} />
           <input type="hidden" name="config" value={JSON.stringify(config)} />
-          <input type="hidden" name="clientId" value={clientId} />
+          <input type="hidden" name="clientId" value={clientId()} />
           <button type="submit" name="intent" value="save" aria-label="Save setup"
             className="button-primary shrink-0 px-2 py-1.5">
             <SaveIcon />
@@ -135,7 +135,7 @@ export function StorageConfigurator({ storedConfig, initialName, initialId }: { 
           <Form method="post">
             <input type="hidden" name="intent" value="delete" />
             <input type="hidden" name="id" value={initialId} />
-            <input type="hidden" name="clientId" value={clientId} />
+            <input type="hidden" name="clientId" value={clientId()} />
             <button
               type="submit"
               aria-label="Delete setup"
