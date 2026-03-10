@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import type { BottlePlacement, BottlePlacements, InventoryMatrix, WineItem } from "types";
+import type { BottlePlacement, BottlePlacements, WineMatrix, WineItem } from "types";
 
 export class WineInventoryStore extends DurableObject<Env> {
   readonly #cache = new Map<string, unknown>();
@@ -43,7 +43,7 @@ export class WineInventoryStore extends DurableObject<Env> {
     `);
   }
 
-  setInventory(wines: WineItem[]): void {
+  setWines(wines: WineItem[]): void {
     this.ctx.storage.sql.exec("DELETE FROM wines");
     for (const w of wines) {
       this.ctx.storage.sql.exec(
@@ -61,7 +61,7 @@ export class WineInventoryStore extends DurableObject<Env> {
     return rows[0].n;
   }
 
-  queryInventory(q?: string, type?: string, country?: string, placement?: "all" | "active" | "pending", setupId?: string): WineItem[] {
+  queryWines(q?: string, type?: string, country?: string, placement?: "all" | "active" | "pending", setupId?: string): WineItem[] {
     const key = `qi:${q}:${type}:${country}:${placement}:${setupId}`;
     const hit = this.#get<WineItem[]>(key);
     if (hit) return hit;
@@ -165,7 +165,7 @@ export class WineInventoryStore extends DurableObject<Env> {
     this.#invalidate();
   }
 
-  getInventory(): BottlePlacements {
+  getWinePlacements(): BottlePlacements {
     type Row = { iWine: string; setup_id: string; shelf: number; layer: number; slot: number };
     const rows = [...this.ctx.storage.sql.exec<Row>(
       "SELECT iWine, setup_id, shelf, layer, slot FROM placements",
@@ -176,8 +176,8 @@ export class WineInventoryStore extends DurableObject<Env> {
     }, {} as BottlePlacements);
   }
 
-  getWinesInSetup(setupId: string): InventoryMatrix {
-    const hit = this.#get<InventoryMatrix>(`ws:${setupId}`);
+  getWineMatrix(setupId: string): WineMatrix {
+    const hit = this.#get<WineMatrix>(`ws:${setupId}`);
     if (hit) return hit;
     type Row = { data: string; shelf: number; layer: number; slot: number };
     const rows = [...this.ctx.storage.sql.exec<Row>(
@@ -186,7 +186,7 @@ export class WineInventoryStore extends DurableObject<Env> {
        WHERE p.setup_id = ?`,
       setupId,
     )];
-    const matrix: InventoryMatrix = {};
+    const matrix: WineMatrix = {};
     for (const { data, shelf, layer, slot } of rows) {
       matrix[shelf] ??= {};
       matrix[shelf][layer] ??= {};

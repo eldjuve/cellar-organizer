@@ -48,7 +48,7 @@ export async function action({ request }: Route.ActionArgs) {
     session.set("password", password);
 
     const wineStore = env.WINE_STORE.getByName(username);
-    await wineStore.setInventory(inventory);
+    await wineStore.setWines(inventory);
 
     // Login succeeded, send them to the home page.
     return redirect("/", {

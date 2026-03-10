@@ -71,7 +71,7 @@ export type WineItem = {
 export type BottlePlacement = { setupId: string; shelf: number; layer: number; slot: number };
 export type BottlePlacements = { [iWine: string]: BottlePlacement[] };
 
-export type InventoryMatrix = {
+export type WineMatrix = {
   [shelf: number]: {
     [layer: number]: {
       [slot: number]: WineItem;
@@ -93,11 +93,11 @@ export type SetupListItem = { id: string; name: string };
 
 type PlacementCoords = { iWine: string; setupId: string; shelf: number; layer: number; slot: number };
 
-export type BottlesServerMessage =
+export type PlacementMessage =
   | ({ type: "placementAdded" } & PlacementCoords)
   | ({ type: "placementRemoved" } & PlacementCoords);
 
-export type SetupsServerSseMessage = { type: "setupListChanged" };
+export type SetupMessage = { type: "setupListChanged" };
 
 
 export interface Env {

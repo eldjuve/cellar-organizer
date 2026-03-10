@@ -21,7 +21,7 @@ const requestHandler = createRequestHandler(
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    if (url.pathname === "/sse/bottles") {
+    if (url.pathname === "/sse/placements") {
       const session = await getSession(request.headers.get("Cookie"));
       const username = session.get("username");
       if (!username) return new Response("Unauthorized", { status: 401 });
