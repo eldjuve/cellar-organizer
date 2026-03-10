@@ -46,20 +46,7 @@ const WinePosition = () => {
 };
 
 const WineDisplay = ({ wine }: { wine: WineItem }) => {
-  const { wineMatrix } = useStorageContext();
   const { setSelectedWineId } = useAppContext();
-
-  const locations: BottlePlacement[] = [];
-  
-  for (const [shelf, layers] of Object.entries(wineMatrix)) {
-    for (const [layer, slots] of Object.entries(layers)) {
-      for (const [slot, w] of Object.entries(slots)) {
-        if (w.iWine === wine.iWine) {
-          locations.push({ configId: "", shelf: Number(shelf), layer: Number(layer), slot: Number(slot) });
-        }
-      }
-    }
-  }
 
   return (
     <div className="flex w-full justify-between px-4 py-3 gap-4 items-start border-t-2 border-ct-primary bg-ct-primary-light">
@@ -84,11 +71,11 @@ const WineDisplay = ({ wine }: { wine: WineItem }) => {
       </div>
       <div className="shrink-0 text-right">
         <p className="text-sm font-medium tabular-nums text-ct-text">
-          {locations.length}/{Number(wine.Quantity)} stored
+          {wine.placements?.length}/{Number(wine.Quantity)} stored
         </p>
-        {locations.length > 0 && (
+        {wine.placements  && (
           <ul className="mt-1 space-y-1">
-            {locations.map((placement) => (
+            {wine.placements.map((placement) => (
               <li key={`${placement.configId}:${placement.shelf}.${placement.layer}.${placement.slot}`}>
                 <LocationDeselector placement={placement} />
               </li>
