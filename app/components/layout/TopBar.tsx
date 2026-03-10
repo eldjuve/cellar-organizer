@@ -1,6 +1,6 @@
 import { Form, Link } from "react-router";
 import { Logo } from "./Logo";
-import { UserIcon, RefreshIcon } from "./icons";
+import { UserIcon, RefreshIcon } from "../icons";
 
 export function TopBar({
   username,

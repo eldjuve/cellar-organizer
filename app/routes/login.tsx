@@ -5,7 +5,7 @@ import { getSession, commitSession } from "../sessions.server";
 import { fetchWineData } from "~/utils.server";
 import { env } from "workers/store";
 
-import logo from "./ct_logo.png";
+
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
@@ -79,7 +79,7 @@ export default function Login({ loaderData }: Route.ComponentProps) {
       <div className="flex flex-col w-full max-w-sm rounded-xl border border-ct-border bg-ct-surface p-8 shadow-sm">
         <div className="mb-6 flex flex-col items-center gap-3">
           <div className="h-10">
-            <img src={logo} alt="CellarTracker Logo" className="h-full w-auto" />
+            <img src="/ct_logo.png" alt="CellarTracker Logo" className="h-full w-auto" />
           </div>
           <h1 className="text-lg font-semibold tracking-tight text-ct-text">
             Sign in to Cellar Organizer

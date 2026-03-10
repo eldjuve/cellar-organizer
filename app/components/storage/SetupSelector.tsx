@@ -1,6 +1,6 @@
 import { Link, useNavigate, useSearchParams } from "react-router";
 import type { SetupListItem } from "types";
-import { useAppContext } from "./AppContextProvider";
+import { useAppContext } from "../AppContextProvider";
 
 export const SetupSelector = ({
   setupList,

@@ -2,7 +2,7 @@ import React from "react";
 import type { BottlePlacement, WineItem } from "types";
 import { useAppContext } from "../AppContextProvider";
 import { useStorageContext } from "./Storage";
-import { BarcodeScanner } from "../BarcodeScanner";
+import { BarcodeScanner } from "../barcode/BarcodeScanner";
 import { CellarTrackerLink } from "../CellarTrackerLink";
 import { BarcodeScanIcon } from "../icons";
 

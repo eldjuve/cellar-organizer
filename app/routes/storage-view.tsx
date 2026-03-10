@@ -4,8 +4,8 @@ import { env } from "workers/store";
 import { getSession } from "~/sessions.server";
 import { redirect, useNavigate } from "react-router";
 import { useEffect } from "react";
-import { StorageView } from "~/components/Storage/Storage";
-import { SetupSelector } from "~/components/SetupSelector";
+import { StorageView } from "~/components/storage/Storage";
+import { SetupSelector } from "~/components/storage/SetupSelector";
 import { useAppContext } from "~/components/AppContextProvider";
 
 export async function action({ request, params }: Route.ActionArgs) {

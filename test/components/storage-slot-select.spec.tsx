@@ -31,7 +31,7 @@ vi.mock('../../app/components/Storage/Selected', () => ({
 
 // --- Helpers ---
 
-import { StorageView } from '../../app/components/Storage/Storage';
+import { StorageView } from '../../app/components/storage/Storage';
 
 const config: ShelfProps[] = [{ capacity: 3, innerRow: false }];
 const setupId = 'setup-1';

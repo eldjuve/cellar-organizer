@@ -1,8 +1,8 @@
-import { Shelf } from "~/components/Storage/Fridge";
+import { Shelf } from "~/components/storage/Fridge";
 import { getSession } from "~/sessions.server";
 import type { Route } from "./+types/setup";
 import { Form, redirect } from "react-router";
-import { TopBar } from "~/components/TopBar";
+import { TopBar } from "~/components/layout/TopBar";
 import { useState, type CSSProperties } from "react";
 import { env } from "workers/store";
 import type { ShelfProps, StorageSetup } from "types";
