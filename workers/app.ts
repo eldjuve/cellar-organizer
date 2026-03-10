@@ -20,23 +20,19 @@ const requestHandler = createRequestHandler(
 
 export default {
   async fetch(request, env, ctx) {
-    if (request.headers.get("Upgrade") === "websocket") {
-      const url = new URL(request.url);
+    const url = new URL(request.url);
+    if (url.pathname === "/sse/bottles") {
       const session = await getSession(request.headers.get("Cookie"));
       const username = session.get("username");
-      if (!username) {
-        return new Response("Unauthorized", { status: 401 });
-      }
-      if (url.pathname === "/ws/bottles") {
-        return env.WINE_STORE.getByName(username).fetch(request);
-      }
-      if (url.pathname === "/ws/setups") {
-        return env.SETUP_STORE.getByName(username).fetch(request);
-      }
-      return new Response("Not Found", { status: 404 });
+      if (!username) return new Response("Unauthorized", { status: 401 });
+      return env.WINE_STORE.getByName(username).fetch(request);
     }
-    return requestHandler(request, {
-      cloudflare: { env, ctx },
-    });
+    if (url.pathname === "/sse/setups") {
+      const session = await getSession(request.headers.get("Cookie"));
+      const username = session.get("username");
+      if (!username) return new Response("Unauthorized", { status: 401 });
+      return env.SETUP_STORE.getByName(username).fetch(request);
+    }
+    return requestHandler(request, { cloudflare: { env, ctx } });
   },
 } satisfies ExportedHandler<Env>;

@@ -89,32 +89,16 @@ export type StorageSetup = ShelfProps[];
 
 export type SetupListItem = { id: string; name: string };
 
-// WebSocket message types — shared between worker and client
+// SSE message types — shared between worker and client
 
 type PlacementCoords = { iWine: string; setupId: string; shelf: number; layer: number; slot: number };
 
-export type BottlesClientMessage =
-  | { type: "getInventory" }
-  | ({ type: "addPlacement" } & PlacementCoords)
-  | ({ type: "removePlacement" } & PlacementCoords);
-
 export type BottlesServerMessage =
-  | { type: "inventory"; data: BottlePlacements }
   | ({ type: "placementAdded" } & PlacementCoords)
-  | ({ type: "placementRemoved" } & PlacementCoords)
-  | { type: "ack" }
-  | { type: "error"; message: string };
+  | ({ type: "placementRemoved" } & PlacementCoords);
 
-export type SetupsClientMessage =
-  | { type: "getSetupList" }
-  | { type: "getSetup"; id: string }
-  | { type: "setSetup"; id: string | null; name: string; config: StorageSetup };
+export type SetupsServerSseMessage = { type: "setupListChanged" };
 
-export type SetupsServerMessage =
-  | { type: "setupList"; data: SetupListItem[] }
-  | { type: "setup"; data: { name: string; config: StorageSetup } | null }
-  | { type: "savedSetup"; id: string }
-  | { type: "error"; message: string };
 
 export interface Env {
   SESSION_SECRET: string;

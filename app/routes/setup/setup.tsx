@@ -46,7 +46,8 @@ export async function action({ request }: Route.ActionArgs) {
   if (intent === "delete") {
     const id = formData.get("id") as string;
     const userStore = env.SETUP_STORE.getByName(username);
-    userStore.deleteSetup(id);
+    await userStore.deleteSetup(id);
+    await userStore.notifySetupChanged();
     return redirect("/");
   }
 
@@ -56,6 +57,7 @@ export async function action({ request }: Route.ActionArgs) {
 
   const userStore = env.SETUP_STORE.getByName(username);
   const savedId = await userStore.setSetup(id || null, name, config);
+  await userStore.notifySetupChanged();
 
   return redirect(`/${savedId}`);
 }

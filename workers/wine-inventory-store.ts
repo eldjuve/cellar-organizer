@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import type { BottlePlacement, BottlesClientMessage, BottlePlacements, InventoryMatrix, WineItem } from "types";
+import type { BottlePlacement, BottlePlacements, InventoryMatrix, WineItem } from "types";
 
 export class WineInventoryStore extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
@@ -169,59 +169,32 @@ export class WineInventoryStore extends DurableObject<Env> {
     return matrix;
   }
 
-  private broadcast(sender: WebSocket, message: string) {
-    for (const ws of this.ctx.getWebSockets()) {
-      if (ws !== sender) ws.send(message);
+  private sseControllers = new Set<ReadableStreamDefaultController<Uint8Array>>();
+
+  private broadcastAll(message: string) {
+    const chunk = new TextEncoder().encode(`data: ${message}\n\n`);
+    for (const controller of this.sseControllers) {
+      try { controller.enqueue(chunk); }
+      catch { this.sseControllers.delete(controller); }
     }
   }
 
-  async fetch(request: Request): Promise<Response> {
-    if (request.headers.get("Upgrade") !== "websocket") {
-      return new Response("Expected WebSocket", { status: 426 });
-    }
-    const pair = new WebSocketPair();
-    const [client, server] = Object.values(pair) as [WebSocket, WebSocket];
-    this.ctx.acceptWebSocket(server);
-    return new Response(null, { status: 101, webSocket: client });
+  notifyPlacementAdded(iWine: string, setupId: string, shelf: number, layer: number, slot: number): void {
+    this.broadcastAll(JSON.stringify({ type: "placementAdded", iWine, setupId, shelf, layer, slot }));
   }
 
-  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    let parsed: BottlesClientMessage;
-    try {
-      parsed = JSON.parse(typeof message === "string" ? message : new TextDecoder().decode(message));
-    } catch {
-      ws.send(JSON.stringify({ type: "error", message: "Invalid JSON" }));
-      return;
-    }
-    switch (parsed.type) {
-      case "getInventory":
-        ws.send(JSON.stringify({ type: "inventory", data: this.getInventory() }));
-        break;
-      case "addPlacement": {
-        const result = this.addPlacement(parsed.iWine, parsed.setupId, parsed.shelf, parsed.layer, parsed.slot);
-        if (result.ok) {
-          this.broadcast(ws, JSON.stringify({ type: "placementAdded", iWine: parsed.iWine, setupId: parsed.setupId, shelf: parsed.shelf, layer: parsed.layer, slot: parsed.slot }));
-          ws.send(JSON.stringify({ type: "ack" }));
-        } else {
-          ws.send(JSON.stringify({ type: "error", error: result.error }));
-        }
-        break;
-      }
-      case "removePlacement":
-        this.removePlacement(parsed.iWine, parsed.setupId, parsed.shelf, parsed.layer, parsed.slot);
-        this.broadcast(ws, JSON.stringify({ type: "placementRemoved", iWine: parsed.iWine, setupId: parsed.setupId, shelf: parsed.shelf, layer: parsed.layer, slot: parsed.slot }));
-        ws.send(JSON.stringify({ type: "ack" }));
-        break;
-      default:
-        ws.send(JSON.stringify({ type: "error", message: `Unknown message type: ${(parsed as { type: unknown }).type}` }));
-    }
+  notifyPlacementRemoved(iWine: string, setupId: string, shelf: number, layer: number, slot: number): void {
+    this.broadcastAll(JSON.stringify({ type: "placementRemoved", iWine, setupId, shelf, layer, slot }));
   }
 
-  async webSocketClose(ws: WebSocket, code: number, reason: string): Promise<void> {
-    ws.close(code, reason);
-  }
-
-  async webSocketError(ws: WebSocket): Promise<void> {
-    ws.close(1011, "Internal error");
+  async fetch(_request: Request): Promise<Response> {
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const stream = new ReadableStream<Uint8Array>({
+      start: (c) => { controller = c; this.sseControllers.add(c); },
+      cancel: () => { this.sseControllers.delete(controller); },
+    });
+    return new Response(stream, {
+      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
+    });
   }
 }

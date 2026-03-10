@@ -1,7 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
-import type { SetupsClientMessage, SetupListItem, StorageSetup } from "types";
+import type { SetupListItem, StorageSetup } from "types";
 
 export class StorageSetupStore extends DurableObject<Env> {
+  private sseControllers = new Set<ReadableStreamDefaultController<Uint8Array>>();
+
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     ctx.storage.sql.exec(`
@@ -11,6 +13,18 @@ export class StorageSetupStore extends DurableObject<Env> {
         config TEXT NOT NULL
       )
     `);
+  }
+
+  private broadcastAll(message: string) {
+    const chunk = new TextEncoder().encode(`data: ${message}\n\n`);
+    for (const controller of this.sseControllers) {
+      try { controller.enqueue(chunk); }
+      catch { this.sseControllers.delete(controller); }
+    }
+  }
+
+  notifySetupChanged(): void {
+    this.broadcastAll(JSON.stringify({ type: "setupListChanged" }));
   }
 
   setSetup(id: string | null, name: string, setup: StorageSetup): string {
@@ -54,47 +68,14 @@ export class StorageSetupStore extends DurableObject<Env> {
     this.ctx.storage.sql.exec("DELETE FROM setups WHERE id = ?", id);
   }
 
-  async fetch(request: Request): Promise<Response> {
-    if (request.headers.get("Upgrade") !== "websocket") {
-      return new Response("Expected WebSocket", { status: 426 });
-    }
-    const pair = new WebSocketPair();
-    const [client, server] = Object.values(pair) as [WebSocket, WebSocket];
-    this.ctx.acceptWebSocket(server);
-    return new Response(null, { status: 101, webSocket: client });
-  }
-
-  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    let parsed: SetupsClientMessage;
-    try {
-      parsed = JSON.parse(typeof message === "string" ? message : new TextDecoder().decode(message));
-    } catch {
-      ws.send(JSON.stringify({ type: "error", message: "Invalid JSON" }));
-      return;
-    }
-    switch (parsed.type) {
-      case "getSetupList":
-        ws.send(JSON.stringify({ type: "setupList", data: this.getSetupList() }));
-        break;
-      case "getSetup":
-        ws.send(JSON.stringify({ type: "setup", data: this.getSetup(parsed.id) }));
-        break;
-      case "setSetup":
-        ws.send(JSON.stringify({
-          type: "savedSetup",
-          id: this.setSetup(parsed.id, parsed.name, parsed.config),
-        }));
-        break;
-      default:
-        ws.send(JSON.stringify({ type: "error", message: `Unknown message type: ${(parsed as { type: unknown }).type}` }));
-    }
-  }
-
-  async webSocketClose(ws: WebSocket, code: number, reason: string): Promise<void> {
-    ws.close(code, reason);
-  }
-
-  async webSocketError(ws: WebSocket): Promise<void> {
-    ws.close(1011, "Internal error");
+  async fetch(_request: Request): Promise<Response> {
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const stream = new ReadableStream<Uint8Array>({
+      start: (c) => { controller = c; this.sseControllers.add(c); },
+      cancel: () => { this.sseControllers.delete(controller); },
+    });
+    return new Response(stream, {
+      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
+    });
   }
 }
