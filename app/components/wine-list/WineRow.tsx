@@ -1,5 +1,6 @@
 import { useAppContext } from "../AppContextProvider";
 import type { WineItem } from "types";
+import { useEffect, useRef } from "react";
 
 export const WineRow = ({
   wine,
@@ -13,6 +14,11 @@ export const WineRow = ({
   const disabled = !!(selectedPosition && locations.length === quantity);
   const isSelected = selectedWine?.iWine === wine.iWine;
   const fullyStored = locations.length === quantity;
+  const ref = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (isSelected) ref.current?.scrollIntoView({ block: "nearest" });
+  }, [isSelected]);
 
   const handleClick = () => {
     setSelectedWineId(wine.iWine);
@@ -20,6 +26,7 @@ export const WineRow = ({
 
   return (
     <button
+      ref={ref}
       onClick={handleClick}
       disabled={disabled}
       className={`flex items-center px-3 py-2 w-full text-sm text-left transition-colors
