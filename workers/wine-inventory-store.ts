@@ -2,6 +2,18 @@ import { DurableObject } from "cloudflare:workers";
 import type { BottlePlacement, BottlePlacements, InventoryMatrix, WineItem } from "types";
 
 export class WineInventoryStore extends DurableObject<Env> {
+  readonly #cache = new Map<string, unknown>();
+
+  #get<T>(key: string): T | undefined {
+    return this.#cache.get(key) as T | undefined;
+  }
+  #set(key: string, value: unknown): void {
+    this.#cache.set(key, value);
+  }
+  #invalidate(): void {
+    this.#cache.clear();
+  }
+
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     ctx.storage.sql.exec(`
@@ -41,6 +53,7 @@ export class WineInventoryStore extends DurableObject<Env> {
         Number(w.Quantity), w.WineBarcode || null, w.UPC || null, JSON.stringify(w),
       );
     }
+    this.#invalidate();
   }
 
   getCount(): number {
@@ -49,6 +62,9 @@ export class WineInventoryStore extends DurableObject<Env> {
   }
 
   queryInventory(q?: string, type?: string, country?: string, placement?: "all" | "active" | "pending", setupId?: string): WineItem[] {
+    const key = `qi:${q}:${type}:${country}:${placement}:${setupId}`;
+    const hit = this.#get<WineItem[]>(key);
+    if (hit) return hit;
     let sql = `SELECT w.data, json_group_array(
       CASE WHEN p.setup_id IS NULL THEN NULL
       ELSE json_object('setupId', p.setup_id, 'shelf', p.shelf, 'layer', p.layer, 'slot', p.slot)
@@ -69,7 +85,7 @@ export class WineInventoryStore extends DurableObject<Env> {
       sql += " AND (SELECT COUNT(*) FROM placements p2 WHERE p2.iWine = w.iWine) < w.quantity";
     }
     sql += " GROUP BY w.iWine";
-    return [...this.ctx.storage.sql.exec<{ data: string; placements_json: string }>(sql, ...params)]
+    const result = [...this.ctx.storage.sql.exec<{ data: string; placements_json: string }>(sql, ...params)]
       .map((r) => {
         const wine: WineItem = JSON.parse(r.data);
         const rawPlacements: (BottlePlacement | null)[] = JSON.parse(r.placements_json);
@@ -77,6 +93,8 @@ export class WineInventoryStore extends DurableObject<Env> {
         if (placements.length > 0) wine.placements = placements;
         return wine;
       });
+    this.#set(key, result);
+    return result;
   }
 
   getWineById(iWine: string): WineItem | null {
@@ -109,13 +127,17 @@ export class WineInventoryStore extends DurableObject<Env> {
   }
 
   getFilterOptions(): { types: string[]; countries: string[] } {
+    const hit = this.#get<{ types: string[]; countries: string[] }>("fo");
+    if (hit) return hit;
     const types = [...this.ctx.storage.sql.exec<{ type: string }>(
       "SELECT DISTINCT type FROM wines WHERE type IS NOT NULL ORDER BY type",
     )].map((r) => r.type);
     const countries = [...this.ctx.storage.sql.exec<{ country: string }>(
       "SELECT DISTINCT country FROM wines WHERE country IS NOT NULL ORDER BY country",
     )].map((r) => r.country);
-    return { types, countries };
+    const result = { types, countries };
+    this.#set("fo", result);
+    return result;
   }
 
   addPlacement(iWine: string, setupId: string, shelf: number, layer: number, slot: number): { ok: true } | { ok: false; error: string } {
@@ -131,6 +153,7 @@ export class WineInventoryStore extends DurableObject<Env> {
     } catch {
       return { ok: false, error: "placement failed" };
     }
+    this.#invalidate();
     return { ok: true };
   }
 
@@ -139,6 +162,7 @@ export class WineInventoryStore extends DurableObject<Env> {
       "DELETE FROM placements WHERE iWine = ? AND setup_id = ? AND shelf = ? AND layer = ? AND slot = ?",
       iWine, setupId, shelf, layer, slot,
     );
+    this.#invalidate();
   }
 
   getInventory(): BottlePlacements {
@@ -153,6 +177,8 @@ export class WineInventoryStore extends DurableObject<Env> {
   }
 
   getWinesInSetup(setupId: string): InventoryMatrix {
+    const hit = this.#get<InventoryMatrix>(`ws:${setupId}`);
+    if (hit) return hit;
     type Row = { data: string; shelf: number; layer: number; slot: number };
     const rows = [...this.ctx.storage.sql.exec<Row>(
       `SELECT w.data, p.shelf, p.layer, p.slot FROM wines w
@@ -166,32 +192,35 @@ export class WineInventoryStore extends DurableObject<Env> {
       matrix[shelf][layer] ??= {};
       matrix[shelf][layer][slot] = JSON.parse(data);
     }
+    this.#set(`ws:${setupId}`, matrix);
     return matrix;
   }
 
-  private sseControllers = new Set<ReadableStreamDefaultController<Uint8Array>>();
+  private sseControllers = new Map<string, ReadableStreamDefaultController<Uint8Array>>();
 
-  private broadcastAll(message: string) {
+  private broadcastAll(message: string, excludeClientId?: string) {
     const chunk = new TextEncoder().encode(`data: ${message}\n\n`);
-    for (const controller of this.sseControllers) {
+    for (const [id, controller] of this.sseControllers) {
+      if (id === excludeClientId) continue;
       try { controller.enqueue(chunk); }
-      catch { this.sseControllers.delete(controller); }
+      catch { this.sseControllers.delete(id); }
     }
   }
 
-  notifyPlacementAdded(iWine: string, setupId: string, shelf: number, layer: number, slot: number): void {
-    this.broadcastAll(JSON.stringify({ type: "placementAdded", iWine, setupId, shelf, layer, slot }));
+  notifyPlacementAdded(iWine: string, setupId: string, shelf: number, layer: number, slot: number, excludeClientId?: string): void {
+    this.broadcastAll(JSON.stringify({ type: "placementAdded", iWine, setupId, shelf, layer, slot }), excludeClientId);
   }
 
-  notifyPlacementRemoved(iWine: string, setupId: string, shelf: number, layer: number, slot: number): void {
-    this.broadcastAll(JSON.stringify({ type: "placementRemoved", iWine, setupId, shelf, layer, slot }));
+  notifyPlacementRemoved(iWine: string, setupId: string, shelf: number, layer: number, slot: number, excludeClientId?: string): void {
+    this.broadcastAll(JSON.stringify({ type: "placementRemoved", iWine, setupId, shelf, layer, slot }), excludeClientId);
   }
 
-  async fetch(_request: Request): Promise<Response> {
+  async fetch(request: Request): Promise<Response> {
+    const clientId = new URL(request.url).searchParams.get("clientId") ?? crypto.randomUUID();
     let controller!: ReadableStreamDefaultController<Uint8Array>;
     const stream = new ReadableStream<Uint8Array>({
-      start: (c) => { controller = c; this.sseControllers.add(c); },
-      cancel: () => { this.sseControllers.delete(controller); },
+      start: (c) => { controller = c; this.sseControllers.set(clientId, c); },
+      cancel: () => { this.sseControllers.delete(clientId); },
     });
     return new Response(stream, {
       headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },

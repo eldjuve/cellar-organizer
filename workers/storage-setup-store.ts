@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import type { SetupListItem, StorageSetup } from "types";
 
 export class StorageSetupStore extends DurableObject<Env> {
-  private sseControllers = new Set<ReadableStreamDefaultController<Uint8Array>>();
+  private sseControllers = new Map<string, ReadableStreamDefaultController<Uint8Array>>();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -15,16 +15,17 @@ export class StorageSetupStore extends DurableObject<Env> {
     `);
   }
 
-  private broadcastAll(message: string) {
+  private broadcastAll(message: string, excludeClientId?: string) {
     const chunk = new TextEncoder().encode(`data: ${message}\n\n`);
-    for (const controller of this.sseControllers) {
+    for (const [id, controller] of this.sseControllers) {
+      if (id === excludeClientId) continue;
       try { controller.enqueue(chunk); }
-      catch { this.sseControllers.delete(controller); }
+      catch { this.sseControllers.delete(id); }
     }
   }
 
-  notifySetupChanged(): void {
-    this.broadcastAll(JSON.stringify({ type: "setupListChanged" }));
+  notifySetupChanged(excludeClientId?: string): void {
+    this.broadcastAll(JSON.stringify({ type: "setupListChanged" }), excludeClientId);
   }
 
   setSetup(id: string | null, name: string, setup: StorageSetup): string {
@@ -68,11 +69,12 @@ export class StorageSetupStore extends DurableObject<Env> {
     this.ctx.storage.sql.exec("DELETE FROM setups WHERE id = ?", id);
   }
 
-  async fetch(_request: Request): Promise<Response> {
+  async fetch(request: Request): Promise<Response> {
+    const clientId = new URL(request.url).searchParams.get("clientId") ?? crypto.randomUUID();
     let controller!: ReadableStreamDefaultController<Uint8Array>;
     const stream = new ReadableStream<Uint8Array>({
-      start: (c) => { controller = c; this.sseControllers.add(c); },
-      cancel: () => { this.sseControllers.delete(controller); },
+      start: (c) => { controller = c; this.sseControllers.set(clientId, c); },
+      cancel: () => { this.sseControllers.delete(clientId); },
     });
     return new Response(stream, {
       headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
