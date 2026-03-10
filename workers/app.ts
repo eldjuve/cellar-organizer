@@ -10,7 +10,7 @@ declare module "react-router" {
   }
 }
 
-export { StorageSetupStore } from "./storage-setup-store";
+export { StorageConfigStore } from "./storage-config-store";
 export { WineInventoryStore } from "./wine-inventory-store";
 
 const requestHandler = createRequestHandler(
@@ -27,11 +27,11 @@ export default {
       if (!username) return new Response("Unauthorized", { status: 401 });
       return env.WINE_STORE.getByName(username).fetch(request);
     }
-    if (url.pathname === "/sse/setups") {
+    if (url.pathname === "/sse/configs") {
       const session = await getSession(request.headers.get("Cookie"));
       const username = session.get("username");
       if (!username) return new Response("Unauthorized", { status: 401 });
-      return env.SETUP_STORE.getByName(username).fetch(request);
+      return env.CONFIG_STORE.getByName(username).fetch(request);
     }
     return requestHandler(request, { cloudflare: { env, ctx } });
   },

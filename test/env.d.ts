@@ -1,13 +1,13 @@
 /// <reference types="@cloudflare/vitest-pool-workers" />
 
 import type {
-  StorageSetupStore,
+  StorageConfigStore,
   WineInventoryStore,
 } from "../workers/app";
 
 declare module "cloudflare:test" {
   interface ProvidedEnv {
-    SETUP_STORE: DurableObjectNamespace<StorageSetupStore>;
+    CONFIG_STORE: DurableObjectNamespace<StorageConfigStore>;
     WINE_STORE: DurableObjectNamespace<WineInventoryStore>;
   }
 }

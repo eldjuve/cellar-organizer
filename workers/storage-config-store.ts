@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
-import type { SetupListItem, StorageSetup } from "types";
+import type { StorageConfigItem, StorageConfig } from "types";
 
-export class StorageSetupStore extends DurableObject<Env> {
+export class StorageConfigStore extends DurableObject<Env> {
   private sseControllers = new Map<string, ReadableStreamDefaultController<Uint8Array>>();
 
   constructor(ctx: DurableObjectState, env: Env) {
@@ -24,28 +24,28 @@ export class StorageSetupStore extends DurableObject<Env> {
     }
   }
 
-  notifySetupChanged(excludeClientId?: string): void {
-    this.broadcastAll(JSON.stringify({ type: "setupListChanged" }), excludeClientId);
+  notifyConfigChanged(excludeClientId?: string): void {
+    this.broadcastAll(JSON.stringify({ type: "configListChanged" }), excludeClientId);
   }
 
-  setSetup(id: string | null, name: string, setup: StorageSetup): string {
+  setConfig(id: string | null, name: string, config: StorageConfig): string {
     if (id) {
       this.ctx.storage.sql.exec(
         "UPDATE setups SET name = ?, config = ? WHERE id = ?",
-        name, JSON.stringify(setup), id,
+        name, JSON.stringify(config), id,
       );
       return id;
     } else {
       const newId = crypto.randomUUID();
       this.ctx.storage.sql.exec(
         "INSERT INTO setups (id, name, config) VALUES (?, ?, ?)",
-        newId, name, JSON.stringify(setup),
+        newId, name, JSON.stringify(config),
       );
       return newId;
     }
   }
 
-  getSetup(id: string): { name: string; config: StorageSetup } | null {
+  getConfig(id: string): { name: string; config: StorageConfig } | null {
     const rows = [
       ...this.ctx.storage.sql.exec<{ name: string; config: string }>(
         "SELECT name, config FROM setups WHERE id = ?",
@@ -57,15 +57,15 @@ export class StorageSetupStore extends DurableObject<Env> {
       : null;
   }
 
-  getSetupList(): SetupListItem[] {
+  getConfigList(): StorageConfigItem[] {
     return [
-      ...this.ctx.storage.sql.exec<SetupListItem>(
+      ...this.ctx.storage.sql.exec<StorageConfigItem>(
         "SELECT id, name FROM setups ORDER BY name",
       ),
     ];
   }
 
-  deleteSetup(id: string): void {
+  deleteConfig(id: string): void {
     this.ctx.storage.sql.exec("DELETE FROM setups WHERE id = ?", id);
   }
 

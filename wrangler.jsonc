@@ -18,8 +18,8 @@
   "durable_objects": {
     "bindings": [
       {
-        "name": "SETUP_STORE",
-        "class_name": "StorageSetupStore",
+        "name": "CONFIG_STORE",
+        "class_name": "StorageConfigStore",
       },
       {
         "name": "WINE_STORE",
@@ -43,6 +43,10 @@
     {
       "tag": "v4",
       "deleted_classes": ["BottlePlacementStore"],
+    },
+    {
+      "tag": "v5",
+      "renamed_classes": [{ "from": "StorageSetupStore", "to": "StorageConfigStore" }],
     },
   ],
   /**

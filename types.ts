@@ -68,7 +68,7 @@ export type WineItem = {
   placements?: BottlePlacement[];
 };
 
-export type BottlePlacement = { setupId: string; shelf: number; layer: number; slot: number };
+export type BottlePlacement = { configId: string; shelf: number; layer: number; slot: number };
 export type BottlePlacements = { [iWine: string]: BottlePlacement[] };
 
 export type WineMatrix = {
@@ -85,19 +85,19 @@ export type ShelfProps = {
   layers?: number;
 };
 
-export type StorageSetup = ShelfProps[];
+export type StorageConfig = ShelfProps[];
 
-export type SetupListItem = { id: string; name: string };
+export type StorageConfigItem = { id: string; name: string };
 
 // SSE message types — shared between worker and client
 
-type PlacementCoords = { iWine: string; setupId: string; shelf: number; layer: number; slot: number };
+type PlacementCoords = { iWine: string; configId: string; shelf: number; layer: number; slot: number };
 
 export type PlacementMessage =
   | ({ type: "placementAdded" } & PlacementCoords)
   | ({ type: "placementRemoved" } & PlacementCoords);
 
-export type SetupMessage = { type: "setupListChanged" };
+export type StorageConfigMessage = { type: "configListChanged" };
 
 
 export interface Env {

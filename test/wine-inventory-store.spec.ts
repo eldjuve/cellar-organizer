@@ -509,7 +509,7 @@ describe("getWineById", () => {
     const result = await stub.getWineById("1");
     expect(result).not.toBeNull();
     expect(result!.placements).toHaveLength(1);
-    expect(result!.placements![0]).toEqual({ setupId: "setup-a", shelf: 0, layer: 0, slot: 0 });
+    expect(result!.placements![0]).toEqual({ configId: "setup-a", shelf: 0, layer: 0, slot: 0 });
   });
 
   it("returns null for empty string", async () => {

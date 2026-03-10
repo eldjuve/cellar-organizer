@@ -61,13 +61,13 @@ export class WineInventoryStore extends DurableObject<Env> {
     return rows[0].n;
   }
 
-  queryWines(q?: string, type?: string, country?: string, placement?: "all" | "active" | "pending", setupId?: string): WineItem[] {
-    const key = `qi:${q}:${type}:${country}:${placement}:${setupId}`;
+  queryWines(q?: string, type?: string, country?: string, placement?: "all" | "active" | "pending", configId?: string): WineItem[] {
+    const key = `qi:${q}:${type}:${country}:${placement}:${configId}`;
     const hit = this.#get<WineItem[]>(key);
     if (hit) return hit;
     let sql = `SELECT w.data, json_group_array(
       CASE WHEN p.setup_id IS NULL THEN NULL
-      ELSE json_object('setupId', p.setup_id, 'shelf', p.shelf, 'layer', p.layer, 'slot', p.slot)
+      ELSE json_object('configId', p.setup_id, 'shelf', p.shelf, 'layer', p.layer, 'slot', p.slot)
       END
     ) AS placements_json
     FROM wines w
@@ -77,9 +77,9 @@ export class WineInventoryStore extends DurableObject<Env> {
     if (type)    { sql += " AND w.type = ?";                                   params.push(type); }
     if (country) { sql += " AND w.country = ?";                                params.push(country); }
     if (q)       { sql += " AND (w.wine LIKE ? OR w.producer LIKE ?)";         params.push(`%${q}%`, `%${q}%`); }
-    if (placement === "active" && setupId) {
+    if (placement === "active" && configId) {
       sql += " AND EXISTS (SELECT 1 FROM placements p2 WHERE p2.iWine = w.iWine AND p2.setup_id = ?)";
-      params.push(setupId);
+      params.push(configId);
     }
     if (placement === "pending") {
       sql += " AND (SELECT COUNT(*) FROM placements p2 WHERE p2.iWine = w.iWine) < w.quantity";
@@ -101,7 +101,7 @@ export class WineInventoryStore extends DurableObject<Env> {
     const rows = [...this.ctx.storage.sql.exec<{ data: string; placements_json: string }>(
       `SELECT w.data, json_group_array(
       CASE WHEN p.setup_id IS NULL THEN NULL
-      ELSE json_object('setupId', p.setup_id, 'shelf', p.shelf, 'layer', p.layer, 'slot', p.slot)
+      ELSE json_object('configId', p.setup_id, 'shelf', p.shelf, 'layer', p.layer, 'slot', p.slot)
       END
     ) AS placements_json
     FROM wines w
@@ -140,14 +140,14 @@ export class WineInventoryStore extends DurableObject<Env> {
     return result;
   }
 
-  addPlacement(iWine: string, setupId: string, shelf: number, layer: number, slot: number): { ok: true } | { ok: false; error: string } {
+  addPlacement(iWine: string, configId: string, shelf: number, layer: number, slot: number): { ok: true } | { ok: false; error: string } {
     try {
       const cursor = this.ctx.storage.sql.exec(
         `INSERT OR IGNORE INTO placements (iWine, setup_id, shelf, layer, slot)
          SELECT ?, ?, ?, ?, ?
          WHERE (SELECT COUNT(*) FROM placements WHERE iWine = ?)
              < (SELECT quantity FROM wines WHERE iWine = ?)`,
-        iWine, setupId, shelf, layer, slot, iWine, iWine,
+        iWine, configId, shelf, layer, slot, iWine, iWine,
       );
       if (cursor.rowsWritten === 0) return { ok: false, error: "placement failed" };
     } catch {
@@ -157,10 +157,10 @@ export class WineInventoryStore extends DurableObject<Env> {
     return { ok: true };
   }
 
-  removePlacement(iWine: string, setupId: string, shelf: number, layer: number, slot: number) {
+  removePlacement(iWine: string, configId: string, shelf: number, layer: number, slot: number) {
     this.ctx.storage.sql.exec(
       "DELETE FROM placements WHERE iWine = ? AND setup_id = ? AND shelf = ? AND layer = ? AND slot = ?",
-      iWine, setupId, shelf, layer, slot,
+      iWine, configId, shelf, layer, slot,
     );
     this.#invalidate();
   }
@@ -171,20 +171,20 @@ export class WineInventoryStore extends DurableObject<Env> {
       "SELECT iWine, setup_id, shelf, layer, slot FROM placements",
     )];
     return rows.reduce((acc, { iWine, setup_id, shelf, layer, slot }) => {
-      (acc[iWine] ??= []).push({ setupId: setup_id, shelf, layer, slot });
+      (acc[iWine] ??= []).push({ configId: setup_id, shelf, layer, slot });
       return acc;
     }, {} as BottlePlacements);
   }
 
-  getWineMatrix(setupId: string): WineMatrix {
-    const hit = this.#get<WineMatrix>(`ws:${setupId}`);
+  getWineMatrix(configId: string): WineMatrix {
+    const hit = this.#get<WineMatrix>(`ws:${configId}`);
     if (hit) return hit;
     type Row = { data: string; shelf: number; layer: number; slot: number };
     const rows = [...this.ctx.storage.sql.exec<Row>(
       `SELECT w.data, p.shelf, p.layer, p.slot FROM wines w
        JOIN placements p ON w.iWine = p.iWine
        WHERE p.setup_id = ?`,
-      setupId,
+      configId,
     )];
     const matrix: WineMatrix = {};
     for (const { data, shelf, layer, slot } of rows) {
@@ -192,7 +192,7 @@ export class WineInventoryStore extends DurableObject<Env> {
       matrix[shelf][layer] ??= {};
       matrix[shelf][layer][slot] = JSON.parse(data);
     }
-    this.#set(`ws:${setupId}`, matrix);
+    this.#set(`ws:${configId}`, matrix);
     return matrix;
   }
 
@@ -207,12 +207,12 @@ export class WineInventoryStore extends DurableObject<Env> {
     }
   }
 
-  notifyPlacementAdded(iWine: string, setupId: string, shelf: number, layer: number, slot: number, excludeClientId?: string): void {
-    this.broadcastAll(JSON.stringify({ type: "placementAdded", iWine, setupId, shelf, layer, slot }), excludeClientId);
+  notifyPlacementAdded(iWine: string, configId: string, shelf: number, layer: number, slot: number, excludeClientId?: string): void {
+    this.broadcastAll(JSON.stringify({ type: "placementAdded", iWine, configId, shelf, layer, slot }), excludeClientId);
   }
 
-  notifyPlacementRemoved(iWine: string, setupId: string, shelf: number, layer: number, slot: number, excludeClientId?: string): void {
-    this.broadcastAll(JSON.stringify({ type: "placementRemoved", iWine, setupId, shelf, layer, slot }), excludeClientId);
+  notifyPlacementRemoved(iWine: string, configId: string, shelf: number, layer: number, slot: number, excludeClientId?: string): void {
+    this.broadcastAll(JSON.stringify({ type: "placementRemoved", iWine, configId, shelf, layer, slot }), excludeClientId);
   }
 
   async fetch(request: Request): Promise<Response> {

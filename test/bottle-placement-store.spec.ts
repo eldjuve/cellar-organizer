@@ -25,7 +25,7 @@ describe("addPlacement / getWinePlacements", () => {
     await stub.addPlacement("wine1", "setup1", 0, 0, 0);
     const inv = await stub.getWinePlacements();
     expect(inv).toEqual({
-      wine1: [{ setupId: "setup1", shelf: 0, layer: 0, slot: 0 }],
+      wine1: [{ configId: "setup1", shelf: 0, layer: 0, slot: 0 }],
     });
   });
 
@@ -90,7 +90,7 @@ describe("removePlacement", () => {
     await stub.removePlacement("wineA", "setup1", 0, 0, 0);
     const inv = await stub.getWinePlacements();
     expect(inv["wineA"]).toHaveLength(1);
-    expect(inv["wineA"][0]).toEqual({ setupId: "setup1", shelf: 1, layer: 0, slot: 0 });
+    expect(inv["wineA"][0]).toEqual({ configId: "setup1", shelf: 1, layer: 0, slot: 0 });
   });
 
   it("is a no-op when placement does not exist", async () => {
@@ -128,7 +128,7 @@ describe("getWinePlacements", () => {
     await stub.addPlacement("wine1", "setup1", 2, 3, 4);
     const inv = await stub.getWinePlacements();
     expect(inv["wine1"][0]).toMatchObject({
-      setupId: "setup1",
+      configId: "setup1",
       shelf: 2,
       layer: 3,
       slot: 4,
@@ -142,7 +142,7 @@ describe("getWinePlacements", () => {
     await stub.addPlacement("wine1", "setupB", 0, 0, 0);
     const inv = await stub.getWinePlacements();
     expect(inv["wine1"]).toHaveLength(2);
-    const setupIds = inv["wine1"].map((p: BottlePlacement) => p.setupId).sort();
-    expect(setupIds).toEqual(["setupA", "setupB"]);
+    const configIds = inv["wine1"].map((p: BottlePlacement) => p.configId).sort();
+    expect(configIds).toEqual(["setupA", "setupB"]);
   });
 });
