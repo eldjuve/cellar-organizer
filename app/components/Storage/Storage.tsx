@@ -21,7 +21,7 @@ export const useStorageContext = () => {
 };
 
 
-export function StorageView({ setupId, config, winesInCurrentSetup }: { setupId: string; config?: ShelfProps[]; winesInCurrentSetup: InventoryMatrix }) {
+export function StorageView({ setupId, config, inventory: winesInCurrentSetup }: { setupId: string; config?: ShelfProps[]; inventory: InventoryMatrix }) {
   const { selectedWine, setSelectedWineId, setSelectedPosition } = useAppContext();
   const fetcher = useFetcher();
 

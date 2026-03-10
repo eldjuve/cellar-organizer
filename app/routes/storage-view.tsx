@@ -2,7 +2,8 @@ import type { Route } from "./+types/storage-view";
 import { env } from "workers/store";
 
 import { getSession } from "~/sessions.server";
-import { redirect } from "react-router";
+import { redirect, useNavigate } from "react-router";
+import { useEffect } from "react";
 import { StorageView } from "~/components/Storage/Storage";
 import { SetupSelector } from "~/components/SetupSelector";
 import { useAppContext } from "~/components/AppContextProvider";
@@ -60,14 +61,25 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 }
 
 export default function StorageView_({ loaderData }: Route.ComponentProps) {
-  const { activeTab } = useAppContext();
+  const { activeTab, selectedWine } = useAppContext();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!selectedWine?.placements?.length) return;
+    const inCurrentSetup = selectedWine.placements.some(
+      (p) => p.setupId === loaderData.activeSetupId
+    );
+    if (!inCurrentSetup) {
+      navigate(`/${selectedWine.placements[0].setupId}`);
+    }
+  }, [selectedWine, loaderData.activeSetupId, navigate]);
 
   return (
     <aside className={`flex-1 overflow-hidden flex flex-col gap-2 ${activeTab === "list" ? "max-md:hidden" : ""}`}>
       <SetupSelector setupList={loaderData.setupList} activeSetupId={loaderData.activeSetupId} />
       <StorageView
         config={loaderData.setupConfig ?? undefined}
-        winesInCurrentSetup={loaderData.winesInCurrentSetup}
+        inventory={loaderData.winesInCurrentSetup}
         setupId={loaderData.activeSetupId}
       />
     </aside>
