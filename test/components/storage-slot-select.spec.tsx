@@ -7,6 +7,7 @@ import type { WineItem, InventoryMatrix, ShelfProps } from '../../types';
 const mockFetcherSubmit = vi.fn();
 vi.mock('react-router', () => ({
   useFetcher: () => ({ submit: mockFetcherSubmit, data: undefined, state: 'idle' }),
+  useRevalidator: () => ({ revalidate: vi.fn(), state: 'idle' }),
 }));
 
 const mockSetSelectedWineId = vi.fn();

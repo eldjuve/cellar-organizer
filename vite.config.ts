@@ -50,6 +50,7 @@ export default defineConfig({
           include: ["test/components/**/*.spec.tsx"],
           environment: "happy-dom",
           globals: true,
+          setupFiles: ["test/components/setup.ts"],
         },
       },
     ],
