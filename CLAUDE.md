@@ -96,6 +96,10 @@ app/components/
 - `SetupListItem` — `{ id: string; name: string }` for listing setups
 - `Env` — Cloudflare env bindings (`SESSION_SECRET`)
 
+### Common Pitfalls
+
+- **Do not add a placement-count method or counter.** `WineItem.placements` is always up-to-date (kept in sync by `addPlacement`/`removePlacement` on the DO and re-fetched via `/api/wine` after every change). Use `wine.placements.length` to check how many slots a wine occupies — no separate count is needed.
+
 ### Fridge/Shelf Visualization
 
 `app/components/storage/Fridge.tsx` renders a grid of shelf cells. Positions are encoded as `{ shelf, layer, slot }` integers (previously a string format). The `innerRow` concept in `ShelfProps` represents a front/back split within a single shelf slot.
