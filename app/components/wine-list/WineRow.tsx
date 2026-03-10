@@ -6,7 +6,7 @@ export const WineRow = ({
 }: {
   wine: WineItem;
 }) => {
-  const { selectedWine, setSelectedWineId, selectedPosition, setSelectedPosition } = useAppContext();
+  const { selectedWine, setSelectedWineId, selectedPosition } = useAppContext();
 
   const locations = wine.placements ?? [];
   const quantity = Number(wine.Quantity);
@@ -15,7 +15,6 @@ export const WineRow = ({
   const fullyStored = locations.length === quantity;
 
   const handleClick = () => {
-    if (selectedPosition) setSelectedPosition(undefined);
     setSelectedWineId(wine.iWine);
   };
 
