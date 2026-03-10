@@ -24,7 +24,7 @@ function useConfigSync() {
   }, []);
 }
 
-export function StorageView({ configId, config, wineMatrix: winesInCurrentSetup }: { configId: string; config?: ShelfProps[]; wineMatrix: WineMatrix }) {
+export function StorageView({ configId, config, wineMatrix: winesInCurrentSetup }: { configId: string; config: ShelfProps[]; wineMatrix: WineMatrix }) {
   useConfigSync();
   const { selectedWine, setSelectedWineId, setSelectedPosition, selectedPosition } = useAppContext();
   const fetcher = useFetcher();

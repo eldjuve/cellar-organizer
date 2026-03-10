@@ -1,29 +1,16 @@
 import type { CSSProperties } from "react";
 import type { ShelfProps } from "types";
-import { useAppContext } from "../AppContextProvider";
-import { useStorageContext } from "./StorageContext";
+import { Slot } from "./Slot";
 
-const defaultConfig = [
-  { capacity: 12, innerRow: true, layers: 2 },
-  { capacity: 12, innerRow: true },
-  { capacity: 12, innerRow: true },
-  { capacity: 12, innerRow: true },
-  { capacity: 12, innerRow: true },
-  { capacity: 12, innerRow: true },
-  { capacity: 6, innerRow: false },
-  { capacity: 6, innerRow: false },
-];
-
-export function Storage({ config }: { config?: ShelfProps[] }) {
-  const shelfs = config ?? defaultConfig;
-  const maxCapacity = Math.max(...shelfs.map((shelf) => shelf.capacity));
+export function Storage({ config }: { config: ShelfProps[] }) {
+  const maxCapacity = Math.max(...config.map((shelf) => shelf.capacity));
 
   return (
     <ul
       className="flex flex-col justify-center-safe p-4 overflow-x-hidden overflow-y-auto"
       style={{ '--max-capacity': maxCapacity } as CSSProperties}
     >
-      {shelfs.map((shelf, index) => (
+      {config.map((shelf, index) => (
         <li key={index}>
           <Shelf options={shelf} shelfId={index + 1} />
         </li>
@@ -72,31 +59,6 @@ function Layer({
       {Array.from({ length: layerCapacity }).map((_, index) => (
         <Slot shelf={shelfId} layer={layerId} slot={index + 1} key={index} />
       ))}
-    </div>
-  );
-}
-
-function Slot({ shelf, layer, slot }: { shelf: number; layer: number; slot: number }) {
-  const { onSlotSelect, wineMatrix } = useStorageContext();
-  const { selectedWine, selectedPosition } = useAppContext();
-
-  const wine = wineMatrix[shelf]?.[layer]?.[slot];
-
-  const isSelected =  (selectedPosition?.shelf === shelf && selectedPosition?.layer === layer && selectedPosition?.slot === slot)
-  || (selectedWine !== undefined && selectedWine.iWine === wine?.iWine);  
-
-  const handleSelect = () => {
-    onSlotSelect(shelf, layer, slot);
-  };
-
-  return (
-    <div className="slot">
-      <button
-        className="slot-button"
-        data-color={wine?.Color}
-        data-selected={isSelected || undefined}
-        onClick={handleSelect}
-      ></button>
     </div>
   );
 }
