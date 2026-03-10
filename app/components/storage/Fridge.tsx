@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { ShelfProps } from "types";
 import { useAppContext } from "../AppContextProvider";
-import { useStorageContext } from "./Storage";
+import { useStorageContext } from "./StorageContext";
 
 const defaultConfig = [
   { capacity: 12, innerRow: true, layers: 2 },

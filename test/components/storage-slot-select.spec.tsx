@@ -34,10 +34,10 @@ vi.mock('../../app/components/Storage/Selected', () => ({
 
 // --- Helpers ---
 
-import { StorageView } from '../../app/components/storage/Storage';
+import { StorageView } from '../../app/components/storage/StorageView';
 
 const config: ShelfProps[] = [{ capacity: 3, innerRow: false }];
-const setupId = 'setup-1';
+const configId = 'setup-1';
 
 function makeWine(overrides: Partial<WineItem> & { iWine: string; Quantity: string; placements?: WineItem['placements'] }): WineItem {
   return {
@@ -76,7 +76,7 @@ function makeWine(overrides: Partial<WineItem> & { iWine: string; Quantity: stri
 
 function renderStorage(inventory: WineMatrix = {}) {
   return render(
-    <StorageView setupId={setupId} config={config} wineMatrix={inventory} />,
+    <StorageView configId={configId} config={config} wineMatrix={inventory} />,
   );
 }
 
@@ -94,8 +94,8 @@ describe('Storage slot selection', () => {
       iWine: 'wine-1',
       Quantity: '2',
       placements: [
-        { setupId, shelf: 1, layer: 1, slot: 2 },
-        { setupId, shelf: 1, layer: 1, slot: 3 },
+        { configId, shelf: 1, layer: 1, slot: 2 },
+        { configId, shelf: 1, layer: 1, slot: 3 },
       ],
     });
 
@@ -104,7 +104,7 @@ describe('Storage slot selection', () => {
     const buttons = screen.getAllByRole('button');
     fireEvent.click(buttons[0]); // slot 1 — empty
 
-    expect(mockSetSelectedPosition).toHaveBeenCalledWith({ setupId, shelf: 1, layer: 1, slot: 1 });
+    expect(mockSetSelectedPosition).toHaveBeenCalledWith({ configId, shelf: 1, layer: 1, slot: 1 });
     expect(mockSetSelectedWineId).toHaveBeenCalledWith(undefined);
     expect(mockFetcherSubmit).not.toHaveBeenCalled();
   });
@@ -113,7 +113,7 @@ describe('Storage slot selection', () => {
     mockSelectedWine = makeWine({
       iWine: 'wine-1',
       Quantity: '3',
-      placements: [{ setupId, shelf: 1, layer: 1, slot: 2 }],
+      placements: [{ configId, shelf: 1, layer: 1, slot: 2 }],
     });
 
     renderStorage();
@@ -151,7 +151,7 @@ describe('Storage slot selection', () => {
     const buttons = screen.getAllByRole('button');
     fireEvent.click(buttons[0]); // slot 1 — empty, no selection
 
-    expect(mockSetSelectedPosition).toHaveBeenCalledWith({ setupId, shelf: 1, layer: 1, slot: 1 });
+    expect(mockSetSelectedPosition).toHaveBeenCalledWith({ configId, shelf: 1, layer: 1, slot: 1 });
     expect(mockSetSelectedWineId).toHaveBeenCalledWith(undefined);
     expect(mockFetcherSubmit).not.toHaveBeenCalled();
   });
@@ -160,7 +160,7 @@ describe('Storage slot selection', () => {
     const wine1 = makeWine({
       iWine: 'wine-1',
       Quantity: '2',
-      placements: [{ setupId, shelf: 1, layer: 1, slot: 1 }],
+      placements: [{ configId, shelf: 1, layer: 1, slot: 1 }],
     });
     mockSelectedWine = wine1;
 
@@ -192,11 +192,11 @@ describe('Storage slot selection', () => {
   });
 
   it('Test 7 — position pre-selected, not-fully-placed wine selected → wine placed at position', () => {
-    mockSelectedPosition = { setupId, shelf: 1, layer: 1, slot: 1 };
+    mockSelectedPosition = { configId, shelf: 1, layer: 1, slot: 1 };
     mockSelectedWine = makeWine({
       iWine: 'wine-1',
       Quantity: '3',
-      placements: [{ setupId, shelf: 1, layer: 1, slot: 2 }],
+      placements: [{ configId, shelf: 1, layer: 1, slot: 2 }],
     });
 
     renderStorage({}); // slot 1 empty in inventory
@@ -215,7 +215,7 @@ describe('Storage slot selection', () => {
     ];
     mockSelectedWine = makeWine({ iWine: 'wine-1', Quantity: '5', placements: [] });
 
-    render(<StorageView setupId={setupId} config={multiShelfConfig} wineMatrix={{}} />);
+    render(<StorageView configId={configId} config={multiShelfConfig} wineMatrix={{}} />);
 
     const buttons = screen.getAllByRole('button');
     // Shelf 1 has 3 buttons (indices 0–2), shelf 2 starts at index 3

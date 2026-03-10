@@ -6,7 +6,7 @@ import { List } from "~/components/wine-list/List";
 import { MobileMenu } from "~/components/layout/MobileMenu";
 import { fetchWineData } from "~/utils.server";
 import { getSession } from "~/sessions.server";
-import { Outlet, redirect, useFetcher, useRevalidator } from "react-router";
+import { Link, Outlet, redirect, useFetcher, useParams, useRevalidator } from "react-router";
 import { TopBar } from "~/components/layout/TopBar";
 import { useEffect } from "react";
 import type { PlacementMessage } from "types";
@@ -34,6 +34,12 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const country = url.searchParams.get("country") ?? "";
   const placement = (url.searchParams.get("placement") ?? "all") as "all" | "active" | "pending";
 
+  if (!params.configId) {
+    const configStore = env.CONFIG_STORE.getByName(username);
+    const configList = await configStore.getConfigList();
+    if (configList.length > 0) return redirect(`/${configList[0].id}`);
+  }
+
   const wineStore = env.WINE_STORE.getByName(username);
 
   // Backfill for existing users who logged in before this feature
@@ -44,7 +50,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
   const [filterOptions, wines] = await Promise.all([
     wineStore.getFilterOptions(),
-    wineStore.queryWines(q || undefined, type || undefined, country || undefined, placement, params.setupId),
+    wineStore.queryWines(q || undefined, type || undefined, country || undefined, placement, params.configId),
   ]);
 
   return {
@@ -107,6 +113,7 @@ export default function Storage({ loaderData }: Route.ComponentProps) {
 
 const StorageLayout = ({ loaderData }: { loaderData: Route.ComponentProps["loaderData"] }) => {
   const { activeTab } = useAppContext();
+  const { configId } = useParams();
 
   return (
     <>
@@ -118,7 +125,15 @@ const StorageLayout = ({ loaderData }: { loaderData: Route.ComponentProps["loade
             activeFilters={loaderData.activeFilters}
           />
         </aside>
-        <Outlet />
+        {configId ? (
+          <Outlet />
+        ) : (
+          <aside className={`flex-1 overflow-hidden flex flex-col items-center justify-center gap-4 ${activeTab === "list" ? "max-md:hidden" : ""}`}>
+            <Link to="/config/new" className="button-primary">
+              Configure your first setup
+            </Link>
+          </aside>
+        )}
       </div>
       <MobileMenu />
     </>

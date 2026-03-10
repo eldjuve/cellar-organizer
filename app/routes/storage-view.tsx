@@ -4,8 +4,8 @@ import { env } from "workers/store";
 import { getSession } from "~/sessions.server";
 import { redirect, useNavigate } from "react-router";
 import { useEffect } from "react";
-import { StorageView } from "~/components/storage/Storage";
-import { SetupSelector } from "~/components/storage/SetupSelector";
+import { StorageView } from "~/components/storage/StorageView";
+import { ConfigSelector } from "~/components/storage/ConfigSelector";
 import { useAppContext } from "~/components/AppContextProvider";
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -21,12 +21,12 @@ export async function action({ request, params }: Route.ActionArgs) {
   const clientId = formData.get("clientId") as string | null ?? undefined;
   const wineStore = env.WINE_STORE.getByName(username);
   if (intent === "add") {
-    const result = await wineStore.addPlacement(iWine, params.setupId!, shelf, layer, slot);
-    if (result.ok) await wineStore.notifyPlacementAdded(iWine, params.setupId!, shelf, layer, slot, clientId);
+    const result = await wineStore.addPlacement(iWine, params.configId!, shelf, layer, slot);
+    if (result.ok) await wineStore.notifyPlacementAdded(iWine, params.configId!, shelf, layer, slot, clientId);
     return result;
   }
-  await wineStore.removePlacement(iWine, params.setupId!, shelf, layer, slot);
-  await wineStore.notifyPlacementRemoved(iWine, params.setupId!, shelf, layer, slot, clientId);
+  await wineStore.removePlacement(iWine, params.configId!, shelf, layer, slot);
+  await wineStore.notifyPlacementRemoved(iWine, params.configId!, shelf, layer, slot, clientId);
   return { ok: true };
 }
 
@@ -39,28 +39,20 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
   const username = session.get("username")!;
 
-  if (!params.setupId) {
-    const setupStore = env.SETUP_STORE.getByName(username);
-    const setupList = await setupStore.getSetupList();
-    return setupList.length > 0
-      ? redirect(`/${setupList[0].id}`)
-      : redirect("/setup/new");
-  }
-
   const wineStore = env.WINE_STORE.getByName(username);
-  const setupStore = env.SETUP_STORE.getByName(username);
+  const configStore = env.CONFIG_STORE.getByName(username);
 
-  const [wineMatrix, setupList, setup] = await Promise.all([
-    wineStore.getWineMatrix(params.setupId!),
-    setupStore.getSetupList(),
-    setupStore.getSetup(params.setupId!),
+  const [wineMatrix, configList, storageConfig] = await Promise.all([
+    wineStore.getWineMatrix(params.configId!),
+    configStore.getConfigList(),
+    configStore.getConfig(params.configId!),
   ]);
 
   return {
     wineMatrix,
-    setupList,
-    activeSetupId: params.setupId!,
-    setupConfig: setup?.config ?? null,
+    configList,
+    activeConfigId: params.configId!,
+    config: storageConfig?.config ?? null,
   };
 }
 
@@ -70,21 +62,21 @@ export default function StorageView_({ loaderData }: Route.ComponentProps) {
 
   useEffect(() => {
     if (!selectedWine?.placements?.length) return;
-    const inCurrentSetup = selectedWine.placements.some(
-      (p) => p.setupId === loaderData.activeSetupId
+    const inCurrentConfig = selectedWine.placements.some(
+      (p) => p.configId === loaderData.activeConfigId
     );
-    if (!inCurrentSetup) {
-      navigate(`/${selectedWine.placements[0].setupId}`);
+    if (!inCurrentConfig) {
+      navigate(`/${selectedWine.placements[0].configId}`);
     }
-  }, [selectedWine, loaderData.activeSetupId, navigate]);
+  }, [selectedWine, loaderData.activeConfigId, navigate]);
 
   return (
     <aside className={`flex-1 overflow-hidden flex flex-col gap-2 ${activeTab === "list" ? "max-md:hidden" : ""}`}>
-      <SetupSelector setupList={loaderData.setupList} activeSetupId={loaderData.activeSetupId} />
+      <ConfigSelector configList={loaderData.configList} activeConfigId={loaderData.activeConfigId} />
       <StorageView
-        config={loaderData.setupConfig ?? undefined}
+        config={loaderData.config ?? undefined}
         wineMatrix={loaderData.wineMatrix}
-        setupId={loaderData.activeSetupId}
+        configId={loaderData.activeConfigId}
       />
     </aside>
   );

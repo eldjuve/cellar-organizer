@@ -73,7 +73,7 @@ describe('WineRow', () => {
   it('clicking a wine row does NOT clear selectedPosition', () => {
     // Regression: previously handleClick called setSelectedPosition(undefined) before
     // setSelectedWineId, so the async auto-placement effect found no position to place at.
-    mockSelectedPosition = { setupId: 'setup-1', shelf: 1, layer: 1, slot: 1 };
+    mockSelectedPosition = { configId: 'setup-1', shelf: 1, layer: 1, slot: 1 };
 
     const wine = makeWine({ iWine: 'wine-1', Quantity: '2', placements: [] });
     render(<WineRow wine={wine} />);
@@ -94,12 +94,12 @@ describe('WineRow', () => {
   });
 
   it('wine row is disabled when selectedPosition is set and wine is fully stored', () => {
-    mockSelectedPosition = { setupId: 'setup-1', shelf: 1, layer: 1, slot: 1 };
+    mockSelectedPosition = { configId: 'setup-1', shelf: 1, layer: 1, slot: 1 };
 
     const wine = makeWine({
       iWine: 'wine-1',
       Quantity: '1',
-      placements: [{ setupId: 'setup-1', shelf: 1, layer: 1, slot: 2 }],
+      placements: [{ configId: 'setup-1', shelf: 1, layer: 1, slot: 2 }],
     });
     render(<WineRow wine={wine} />);
 
@@ -107,7 +107,7 @@ describe('WineRow', () => {
   });
 
   it('wine row is enabled when selectedPosition is set but wine has room', () => {
-    mockSelectedPosition = { setupId: 'setup-1', shelf: 1, layer: 1, slot: 1 };
+    mockSelectedPosition = { configId: 'setup-1', shelf: 1, layer: 1, slot: 1 };
 
     const wine = makeWine({ iWine: 'wine-1', Quantity: '2', placements: [] });
     render(<WineRow wine={wine} />);

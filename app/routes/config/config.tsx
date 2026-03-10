@@ -1,13 +1,21 @@
 import { Shelf } from "~/components/storage/Fridge";
+import { StorageContext } from "~/components/storage/StorageContext";
 import { getSession } from "~/sessions.server";
-import type { Route } from "./+types/setup";
+import type { Route } from "./+types/config";
 import { Form, redirect } from "react-router";
 import { TopBar } from "~/components/layout/TopBar";
 import { useState, type CSSProperties } from "react";
 import { env } from "workers/store";
-import type { ShelfProps, StorageSetup } from "types";
+import type { ShelfProps, StorageConfig } from "types";
 import { SaveIcon, TrashIcon } from "~/components/icons";
 import { clientId } from "~/clientId";
+import { AppContextProvider } from "~/components/AppContextProvider";
+
+const emptyStorageCtx = {
+  onSlotSelect: () => {},
+  removeWineFromSlot: () => {},
+  wineMatrix: {},
+};
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
@@ -19,17 +27,17 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   }
 
   if (params.id === "new") {
-    return { id: null, name: "", config: [{ capacity: 8, innerRow: false, layers: 1 }] as StorageSetup, username };
+    return { id: null, name: "", config: [{ capacity: 8, innerRow: false, layers: 1 }] as StorageConfig, username };
   }
 
-  const userStore = env.SETUP_STORE.getByName(username);
-  const setup = await userStore.getSetup(params.id!);
+  const configStore = env.CONFIG_STORE.getByName(username);
+  const config = await configStore.getConfig(params.id!);
 
-  if (!setup) {
+  if (!config) {
     return redirect("/");
   }
 
-  return { id: params.id!, name: setup.name, config: setup.config, username };
+  return { id: params.id!, name: config.name, config: config.config, username };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -48,19 +56,19 @@ export async function action({ request }: Route.ActionArgs) {
 
   if (intent === "delete") {
     const id = formData.get("id") as string;
-    const userStore = env.SETUP_STORE.getByName(username);
-    await userStore.deleteSetup(id);
-    await userStore.notifySetupChanged(excludeClientId);
+    const configStore = env.CONFIG_STORE.getByName(username);
+    await configStore.deleteConfig(id);
+    await configStore.notifyConfigChanged(excludeClientId);
     return redirect("/");
   }
 
   const id = formData.get("id") as string | null;
   const name = formData.get("name") as string;
-  const config = JSON.parse(formData.get("config") as string) as StorageSetup;
+  const config = JSON.parse(formData.get("config") as string) as StorageConfig;
 
-  const userStore = env.SETUP_STORE.getByName(username);
-  const savedId = await userStore.setSetup(id || null, name, config);
-  await userStore.notifySetupChanged(excludeClientId);
+  const configStore = env.CONFIG_STORE.getByName(username);
+  const savedId = await configStore.setConfig(id || null, name, config);
+  await configStore.notifyConfigChanged(excludeClientId);
 
   return redirect(`/${savedId}`);
 }
@@ -71,14 +79,16 @@ export default function Component({ loaderData }: Route.ComponentProps) {
       <TopBar username={loaderData.username} />
       <div className="flex flex-col items-center gap-4 p-6">
         <div className="w-full max-w-5xl rounded-xl border border-ct-border bg-ct-surface p-6 shadow-sm">
-          <SetupFridge storedConfig={loaderData.config} initialName={loaderData.name} initialId={loaderData.id} />
+          <AppContextProvider>
+            <StorageConfigurator storedConfig={loaderData.config} initialName={loaderData.name} initialId={loaderData.id} />
+          </AppContextProvider>
         </div>
       </div>
     </div>
   );
 }
 
-export function SetupFridge({ storedConfig, initialName, initialId }: { storedConfig: StorageSetup; initialName: string; initialId: string | null }) {
+export function StorageConfigurator({ storedConfig, initialName, initialId }: { storedConfig: StorageConfig; initialName: string; initialId: string | null }) {
   const [config, setConfig] = useState(storedConfig);
   const [name, setName] = useState(initialName);
 
@@ -173,7 +183,9 @@ function ShelfOptions({
       <div className="flex gap-4 overflow-hidden">
         <div className="grow overflow-hidden">
           <div className="flex flex-col">
-            <Shelf options={options} shelfId={id} />
+            <StorageContext.Provider value={emptyStorageCtx}>
+              <Shelf options={options} shelfId={id} />
+            </StorageContext.Provider>
             <div className="flex gap-8 justify-center items-center mt-3">
               <label>
                 Bottles:{" "}
@@ -200,7 +212,7 @@ function ShelfOptions({
                   Feet-to-head
                 </label>
             </div>
-          
+
           </div>
         </div>
         <label>
@@ -214,7 +226,7 @@ function ShelfOptions({
             onChange={(e) =>
               onChange(id, { ...options, layers: e.target.valueAsNumber })
             }
-            
+
             placeholder="Layers"
             className="w-22 rounded border border-ct-border bg-ct-bg text-ct-text px-2 py-1 text-sm focus:outline-none transition"
           />

@@ -1,13 +1,13 @@
 import { Link, useNavigate, useSearchParams } from "react-router";
-import type { SetupListItem } from "types";
+import type { StorageConfigItem } from "types";
 import { useAppContext } from "../AppContextProvider";
 
-export const SetupSelector = ({
-  setupList,
-  activeSetupId,
+export const ConfigSelector = ({
+  configList,
+  activeConfigId,
 }: {
-  setupList: SetupListItem[];
-  activeSetupId: string;
+  configList: StorageConfigItem[];
+  activeConfigId: string;
 }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -15,10 +15,10 @@ export const SetupSelector = ({
 
   return (
     <div className="flex items-center gap-2">
-      {setupList.length > 0 && (
+      {configList.length > 0 && (
         <>
           <select
-            value={activeSetupId}
+            value={activeConfigId}
             onChange={(e) => {
               setSelectedWineId(undefined);
               const qs = searchParams.toString();
@@ -26,14 +26,14 @@ export const SetupSelector = ({
             }}
             className="rounded border border-ct-border bg-ct-surface text-ct-text px-2 py-1.5 text-sm flex-1 min-w-0"
           >
-            {setupList.map(({ id, name }) => (
+            {configList.map(({ id, name }) => (
               <option key={id} value={id}>{name}</option>
             ))}
           </select>
-          <Link to={`/setup/${activeSetupId}`} className="button-primary shrink-0">Edit</Link>
+          <Link to={`/config/${activeConfigId}`} className="button-primary shrink-0">Edit</Link>
         </>
       )}
-      <Link to="/setup/new" className="button-primary shrink-0">New Setup</Link>
+      <Link to="/config/new" className="button-primary shrink-0">New Setup</Link>
     </div>
   );
 };

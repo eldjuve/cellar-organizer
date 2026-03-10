@@ -3,13 +3,13 @@ import { useFetcher } from "react-router";
 import type { WineMatrix, WineItem } from "types";
 import { clientId } from "~/clientId";
 
-export function useWinesInSetup(winesInCurrentSetup: WineMatrix) {
+export function useWinesInConfig(winesInCurrentConfig: WineMatrix) {
   const fetcher = useFetcher();
-  const [wineMatrix, setWineMatrix] = useState<WineMatrix>(winesInCurrentSetup);
+  const [wineMatrix, setWineMatrix] = useState<WineMatrix>(winesInCurrentConfig);
 
   useEffect(() => {
-    setWineMatrix(winesInCurrentSetup);
-  }, [winesInCurrentSetup]);
+    setWineMatrix(winesInCurrentConfig);
+  }, [winesInCurrentConfig]);
 
   const placeWine = (wine: WineItem, shelf: number, layer: number, slot: number) => {
     setWineMatrix(prev => ({

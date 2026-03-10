@@ -1,7 +1,7 @@
 import React from "react";
 import type { BottlePlacement, WineItem } from "types";
 import { useAppContext } from "../AppContextProvider";
-import { useStorageContext } from "./Storage";
+import { useStorageContext } from "./StorageContext";
 import { BarcodeScanner } from "../barcode/BarcodeScanner";
 import { CellarTrackerLink } from "../CellarTrackerLink";
 import { BarcodeScanIcon } from "../icons";
@@ -55,7 +55,7 @@ const WineDisplay = ({ wine }: { wine: WineItem }) => {
     for (const [layer, slots] of Object.entries(layers)) {
       for (const [slot, w] of Object.entries(slots)) {
         if (w.iWine === wine.iWine) {
-          locations.push({ setupId: "", shelf: Number(shelf), layer: Number(layer), slot: Number(slot) });
+          locations.push({ configId: "", shelf: Number(shelf), layer: Number(layer), slot: Number(slot) });
         }
       }
     }
@@ -89,7 +89,7 @@ const WineDisplay = ({ wine }: { wine: WineItem }) => {
         {locations.length > 0 && (
           <ul className="mt-1 space-y-1">
             {locations.map((placement) => (
-              <li key={`${placement.setupId}:${placement.shelf}.${placement.layer}.${placement.slot}`}>
+              <li key={`${placement.configId}:${placement.shelf}.${placement.layer}.${placement.slot}`}>
                 <LocationDeselector placement={placement} />
               </li>
             ))}
