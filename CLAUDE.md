@@ -80,7 +80,7 @@ app/components/
   storage/
     StorageView.tsx        — StorageView + StorageContext provider + SSE config sync
     StorageContext.tsx     — React context for slot selection and wine matrix
-    Storage.tsx            — shelf/slot grid (Fridge → Storage rename)
+    Storage.tsx            — shelf/slot grid
     Selected.tsx           — selected wine/position detail panel
     ConfigSelector.tsx     — config dropdown + edit/new links
     useWinesInConfig.ts    — optimistic wine matrix state
@@ -92,7 +92,6 @@ app/components/
 
 - `WineItem` — full wine record from CellarTracker
 - `BottlePlacement` — `{ configId: string; shelf: number; layer: number; slot: number }`
-- `BottlePlacements` — `{ [iWine: string]: BottlePlacement[] }` mapping wines to typed positions
 - `StorageConfig` — `ShelfProps[]` array defining a rack's shelf configuration
 - `ShelfProps` — `{ capacity, innerRow, layers? }` for a single shelf
 - `StorageConfigItem` — `{ id: string; name: string }` for listing configs
@@ -102,10 +101,6 @@ app/components/
 ### Common Pitfalls
 
 - **Do not add a placement-count method or counter.** `WineItem.placements` is always up-to-date (kept in sync by `addPlacement`/`removePlacement` on the DO and re-fetched via `/api/wine` after every change). Use `wine.placements.length` to check how many slots a wine occupies — no separate count is needed.
-
-### Storage/Shelf Visualization
-
-`app/components/storage/Storage.tsx` renders a grid of shelf cells. Positions are encoded as `{ shelf, layer, slot }` integers. The `innerRow` concept in `ShelfProps` represents a front/back split within a single shelf slot.
 
 ### Type Declarations
 
