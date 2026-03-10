@@ -138,4 +138,71 @@ describe('Storage slot selection', () => {
     expect(mockSetSelectedWineId).toHaveBeenCalledWith('wine-2');
     expect(mockSetSelectedPosition).not.toHaveBeenCalled();
   });
+
+  it('Test 4 — empty slot, no wine selected → position set, wine cleared', () => {
+    mockSelectedWine = undefined;
+
+    renderStorage();
+
+    const buttons = screen.getAllByRole('button');
+    fireEvent.click(buttons[0]); // slot 1 — empty, no selection
+
+    expect(mockSetSelectedPosition).toHaveBeenCalledWith({ setupId, shelf: 1, layer: 1, slot: 1 });
+    expect(mockSetSelectedWineId).toHaveBeenCalledWith(undefined);
+    expect(mockFetcherSubmit).not.toHaveBeenCalled();
+  });
+
+  it('Test 5 — occupied slot, same wine selected → removes placement and re-selects wine', () => {
+    const wine1 = makeWine({
+      iWine: 'wine-1',
+      Quantity: '2',
+      placements: [{ setupId, shelf: 1, layer: 1, slot: 1 }],
+    });
+    mockSelectedWine = wine1;
+
+    const inventory: InventoryMatrix = { 1: { 1: { 1: wine1 } } };
+    renderStorage(inventory);
+
+    const buttons = screen.getAllByRole('button');
+    fireEvent.click(buttons[0]); // slot 1 — occupied by same wine
+
+    expect(mockFetcherSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ intent: 'remove', iWine: 'wine-1', shelf: '1', layer: '1', slot: '1' }),
+      expect.anything(),
+    );
+    expect(mockSetSelectedWineId).toHaveBeenCalledWith('wine-1');
+  });
+
+  it('Test 6 — occupied slot, different wine selected → switches selection, no submit', () => {
+    mockSelectedWine = makeWine({ iWine: 'wine-1', Quantity: '1', placements: [] });
+
+    const wine2 = makeWine({ iWine: 'wine-2', Quantity: '1' });
+    const inventory: InventoryMatrix = { 1: { 1: { 1: wine2 } } };
+    renderStorage(inventory);
+
+    const buttons = screen.getAllByRole('button');
+    fireEvent.click(buttons[0]); // slot 1 — occupied by wine-2
+
+    expect(mockSetSelectedWineId).toHaveBeenCalledWith('wine-2');
+    expect(mockFetcherSubmit).not.toHaveBeenCalled();
+  });
+
+  it('Test 8 — coordinate fidelity: second shelf slot passes correct shelf/layer/slot', () => {
+    const multiShelfConfig: ShelfProps[] = [
+      { capacity: 3, innerRow: false },
+      { capacity: 2, innerRow: false },
+    ];
+    mockSelectedWine = makeWine({ iWine: 'wine-1', Quantity: '5', placements: [] });
+
+    render(<StorageView setupId={setupId} config={multiShelfConfig} inventory={{}} />);
+
+    const buttons = screen.getAllByRole('button');
+    // Shelf 1 has 3 buttons (indices 0–2), shelf 2 starts at index 3
+    fireEvent.click(buttons[3]); // first slot of shelf 2
+
+    expect(mockFetcherSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ intent: 'add', iWine: 'wine-1', shelf: '2', layer: '1', slot: '1' }),
+      expect.anything(),
+    );
+  });
 });
