@@ -5,6 +5,7 @@ import { useAppContext } from "../AppContextProvider";
 import { useWinesInSetup } from "./useWinesInSetup";
 import { Fridge } from "./Fridge";
 import { Display } from "./Selected";
+import { clientId } from "~/clientId";
 
 
 type StorageContextType = {
@@ -25,7 +26,7 @@ export const useStorageContext = () => {
 function useSetupsSync() {
   const revalidator = useRevalidator();
   useEffect(() => {
-    const es = new EventSource("/sse/setups");
+    const es = new EventSource(`/sse/setups?clientId=${clientId}`);
     es.onmessage = (e) => {
       const msg = JSON.parse(e.data) as SetupsServerSseMessage;
       if (msg.type === "setupListChanged") revalidator.revalidate();

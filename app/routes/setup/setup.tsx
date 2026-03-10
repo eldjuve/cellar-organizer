@@ -7,6 +7,7 @@ import { useState, type CSSProperties } from "react";
 import { env } from "workers/store";
 import type { ShelfProps, StorageSetup } from "types";
 import { SaveIcon, TrashIcon } from "~/components/icons";
+import { clientId } from "~/clientId";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
@@ -43,11 +44,13 @@ export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
+  const excludeClientId = formData.get("clientId") as string | null ?? undefined;
+
   if (intent === "delete") {
     const id = formData.get("id") as string;
     const userStore = env.SETUP_STORE.getByName(username);
     await userStore.deleteSetup(id);
-    await userStore.notifySetupChanged();
+    await userStore.notifySetupChanged(excludeClientId);
     return redirect("/");
   }
 
@@ -57,7 +60,7 @@ export async function action({ request }: Route.ActionArgs) {
 
   const userStore = env.SETUP_STORE.getByName(username);
   const savedId = await userStore.setSetup(id || null, name, config);
-  await userStore.notifySetupChanged();
+  await userStore.notifySetupChanged(excludeClientId);
 
   return redirect(`/${savedId}`);
 }
@@ -112,6 +115,7 @@ export function SetupFridge({ storedConfig, initialName, initialId }: { storedCo
         <Form id="setup-form" method="post">
           <input type="hidden" name="id" value={initialId ?? ""} />
           <input type="hidden" name="config" value={JSON.stringify(config)} />
+          <input type="hidden" name="clientId" value={clientId} />
           <button type="submit" name="intent" value="save" aria-label="Save setup"
             className="button-primary shrink-0 px-2 py-1.5">
             <SaveIcon />
@@ -121,6 +125,7 @@ export function SetupFridge({ storedConfig, initialName, initialId }: { storedCo
           <Form method="post">
             <input type="hidden" name="intent" value="delete" />
             <input type="hidden" name="id" value={initialId} />
+            <input type="hidden" name="clientId" value={clientId} />
             <button
               type="submit"
               aria-label="Delete setup"

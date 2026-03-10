@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
 import type { InventoryMatrix, WineItem } from "types";
+import { clientId } from "~/clientId";
 
 export function useWinesInSetup(winesInCurrentSetup: InventoryMatrix) {
   const fetcher = useFetcher();
@@ -16,7 +17,7 @@ export function useWinesInSetup(winesInCurrentSetup: InventoryMatrix) {
       [shelf]: { ...prev[shelf], [layer]: { ...prev[shelf]?.[layer], [slot]: wine } },
     }));
     fetcher.submit(
-      { intent: "add", iWine: wine.iWine, shelf: String(shelf), layer: String(layer), slot: String(slot) },
+      { intent: "add", iWine: wine.iWine, shelf: String(shelf), layer: String(layer), slot: String(slot), clientId },
       { method: "POST" },
     );
   };
@@ -28,7 +29,7 @@ export function useWinesInSetup(winesInCurrentSetup: InventoryMatrix) {
       return next;
     });
     fetcher.submit(
-      { intent: "remove", iWine, shelf: String(shelf), layer: String(layer), slot: String(slot) },
+      { intent: "remove", iWine, shelf: String(shelf), layer: String(layer), slot: String(slot), clientId },
       { method: "POST" },
     );
   };

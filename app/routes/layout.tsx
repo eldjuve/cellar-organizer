@@ -10,6 +10,7 @@ import { Outlet, redirect, useFetcher, useRevalidator } from "react-router";
 import { TopBar } from "~/components/layout/TopBar";
 import { useEffect } from "react";
 import type { BottlesServerMessage } from "types";
+import { clientId } from "~/clientId";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -70,7 +71,7 @@ export async function action({ request }: Route.ActionArgs) {
 function useBottlesSync() {
   const revalidator = useRevalidator();
   useEffect(() => {
-    const es = new EventSource("/sse/bottles");
+    const es = new EventSource(`/sse/bottles?clientId=${clientId}`);
     es.onmessage = (e) => {
       const msg = JSON.parse(e.data) as BottlesServerMessage;
       if (msg.type === "placementAdded" || msg.type === "placementRemoved") {

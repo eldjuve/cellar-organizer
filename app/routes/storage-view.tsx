@@ -18,14 +18,15 @@ export async function action({ request, params }: Route.ActionArgs) {
   const shelf = Number(formData.get("shelf"));
   const layer = Number(formData.get("layer"));
   const slot = Number(formData.get("slot"));
+  const clientId = formData.get("clientId") as string | null ?? undefined;
   const wineStore = env.WINE_STORE.getByName(username);
   if (intent === "add") {
     const result = await wineStore.addPlacement(iWine, params.setupId!, shelf, layer, slot);
-    if (result.ok) await wineStore.notifyPlacementAdded(iWine, params.setupId!, shelf, layer, slot);
+    if (result.ok) await wineStore.notifyPlacementAdded(iWine, params.setupId!, shelf, layer, slot, clientId);
     return result;
   }
   await wineStore.removePlacement(iWine, params.setupId!, shelf, layer, slot);
-  await wineStore.notifyPlacementRemoved(iWine, params.setupId!, shelf, layer, slot);
+  await wineStore.notifyPlacementRemoved(iWine, params.setupId!, shelf, layer, slot, clientId);
   return { ok: true };
 }
 
