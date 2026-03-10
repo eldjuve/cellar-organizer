@@ -6,8 +6,10 @@ import { List } from "~/components/wine-list/List";
 import { MobileMenu } from "~/components/layout/MobileMenu";
 import { fetchWineData } from "~/utils.server";
 import { getSession } from "~/sessions.server";
-import { Outlet, redirect, useFetcher } from "react-router";
+import { Outlet, redirect, useFetcher, useRevalidator } from "react-router";
 import { TopBar } from "~/components/layout/TopBar";
+import { useEffect } from "react";
+import type { BottlesServerMessage } from "types";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -65,7 +67,24 @@ export async function action({ request }: Route.ActionArgs) {
   return { ok: true };
 }
 
+function useBottlesSync() {
+  const revalidator = useRevalidator();
+  useEffect(() => {
+    const es = new EventSource("/sse/bottles");
+    es.onmessage = (e) => {
+      const msg = JSON.parse(e.data) as BottlesServerMessage;
+      if (msg.type === "placementAdded" || msg.type === "placementRemoved") {
+        revalidator.revalidate();
+      }
+    };
+    es.onopen = () => revalidator.revalidate();
+    return () => es.close();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+}
+
 export default function Storage({ loaderData }: Route.ComponentProps) {
+  useBottlesSync();
   const fetcher = useFetcher();
   const isRefetching = fetcher.state !== "idle";
 

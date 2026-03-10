@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
-import { useFetcher } from "react-router";
-import type { InventoryMatrix, ShelfProps } from "types";
+import { useFetcher, useRevalidator } from "react-router";
+import type { SetupsServerSseMessage, InventoryMatrix, ShelfProps } from "types";
 import { useAppContext } from "../AppContextProvider";
 import { useWinesInSetup } from "./useWinesInSetup";
 import { Fridge } from "./Fridge";
@@ -22,7 +22,22 @@ export const useStorageContext = () => {
 };
 
 
+function useSetupsSync() {
+  const revalidator = useRevalidator();
+  useEffect(() => {
+    const es = new EventSource("/sse/setups");
+    es.onmessage = (e) => {
+      const msg = JSON.parse(e.data) as SetupsServerSseMessage;
+      if (msg.type === "setupListChanged") revalidator.revalidate();
+    };
+    es.onopen = () => revalidator.revalidate();
+    return () => es.close();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+}
+
 export function StorageView({ setupId, config, inventory: winesInCurrentSetup }: { setupId: string; config?: ShelfProps[]; inventory: InventoryMatrix }) {
+  useSetupsSync();
   const { selectedWine, setSelectedWineId, setSelectedPosition, selectedPosition } = useAppContext();
   const fetcher = useFetcher();
 
