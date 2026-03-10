@@ -50,14 +50,14 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const wineStore = env.WINE_STORE.getByName(username);
   const setupStore = env.SETUP_STORE.getByName(username);
 
-  const [winesInCurrentSetup, setupList, setup] = await Promise.all([
-    wineStore.getWinesInSetup(params.setupId!),
+  const [wineMatrix, setupList, setup] = await Promise.all([
+    wineStore.getWineMatrix(params.setupId!),
     setupStore.getSetupList(),
     setupStore.getSetup(params.setupId!),
   ]);
 
   return {
-    winesInCurrentSetup,
+    wineMatrix,
     setupList,
     activeSetupId: params.setupId!,
     setupConfig: setup?.config ?? null,
@@ -83,7 +83,7 @@ export default function StorageView_({ loaderData }: Route.ComponentProps) {
       <SetupSelector setupList={loaderData.setupList} activeSetupId={loaderData.activeSetupId} />
       <StorageView
         config={loaderData.setupConfig ?? undefined}
-        inventory={loaderData.winesInCurrentSetup}
+        wineMatrix={loaderData.wineMatrix}
         setupId={loaderData.activeSetupId}
       />
     </aside>

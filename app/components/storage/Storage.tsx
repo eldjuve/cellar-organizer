@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useFetcher, useRevalidator } from "react-router";
-import type { SetupsServerSseMessage, InventoryMatrix, ShelfProps } from "types";
+import type { SetupMessage, WineMatrix, ShelfProps } from "types";
 import { useAppContext } from "../AppContextProvider";
 import { useWinesInSetup } from "./useWinesInSetup";
 import { Fridge } from "./Fridge";
@@ -10,8 +10,8 @@ import { clientId } from "~/clientId";
 
 type StorageContextType = {
   onSlotSelect: (shelf: number, layer: number, slot: number) => void;
-  removeFromInventory: (shelf: number, layer: number, slot: number) => void;
-  inventory: InventoryMatrix;
+  removeWineFromSlot: (shelf: number, layer: number, slot: number) => void;
+  wineMatrix: WineMatrix;
 };
 
 const StorageContext = React.createContext<StorageContextType | undefined>(undefined);
@@ -28,7 +28,7 @@ function useSetupsSync() {
   useEffect(() => {
     const es = new EventSource(`/sse/setups?clientId=${clientId}`);
     es.onmessage = (e) => {
-      const msg = JSON.parse(e.data) as SetupsServerSseMessage;
+      const msg = JSON.parse(e.data) as SetupMessage;
       if (msg.type === "setupListChanged") revalidator.revalidate();
     };
     es.onopen = () => revalidator.revalidate();
@@ -37,17 +37,17 @@ function useSetupsSync() {
   }, []);
 }
 
-export function StorageView({ setupId, config, inventory: winesInCurrentSetup }: { setupId: string; config?: ShelfProps[]; inventory: InventoryMatrix }) {
+export function StorageView({ setupId, config, wineMatrix: winesInCurrentSetup }: { setupId: string; config?: ShelfProps[]; wineMatrix: WineMatrix }) {
   useSetupsSync();
   const { selectedWine, setSelectedWineId, setSelectedPosition, selectedPosition } = useAppContext();
   const fetcher = useFetcher();
 
-  const { winesInSetup, placeWine, removeWine } = useWinesInSetup(winesInCurrentSetup);
+  const { wineMatrix, placeWine, removeWine } = useWinesInSetup(winesInCurrentSetup);
 
   useEffect(() => {
     if (!selectedWine || !selectedPosition) return;
     const { shelf, layer, slot } = selectedPosition;
-    if (winesInSetup[shelf]?.[layer]?.[slot]) return; // slot occupied
+    if (wineMatrix[shelf]?.[layer]?.[slot]) return; // slot occupied
     if ((selectedWine.placements?.length ?? 0) >= Number(selectedWine.Quantity)) return; // fully placed
     placeWine(selectedWine, shelf, layer, slot);
     setSelectedPosition(undefined);
@@ -55,13 +55,13 @@ export function StorageView({ setupId, config, inventory: winesInCurrentSetup }:
   }, [selectedWine]);
 
 
-  const removeFromInventory = (shelf: number, layer: number, slot: number) => {
-    const iWine = winesInSetup[shelf]?.[layer]?.[slot]?.iWine;
+  const removeWineFromSlot = (shelf: number, layer: number, slot: number) => {
+    const iWine = wineMatrix[shelf]?.[layer]?.[slot]?.iWine;
     if (iWine) removeWine(iWine, shelf, layer, slot);
   };
 
   const onSlotSelect = (shelf: number, layer: number, slot: number) => {
-    const wineAtPosition = winesInSetup[shelf]?.[layer]?.[slot];
+    const wineAtPosition = wineMatrix[shelf]?.[layer]?.[slot];
     if (wineAtPosition) {
       if (selectedWine?.iWine === wineAtPosition.iWine) {
         removeWine(wineAtPosition.iWine, shelf, layer, slot);
@@ -81,7 +81,7 @@ export function StorageView({ setupId, config, inventory: winesInCurrentSetup }:
   };
 
   return (
-    <StorageContext.Provider value={{ inventory: winesInSetup, onSlotSelect, removeFromInventory }}>
+    <StorageContext.Provider value={{ wineMatrix, onSlotSelect, removeWineFromSlot }}>
       <div className="grow grid rounded border border-ct-border bg-ct-surface overflow-hidden">
         <Fridge config={config} />
         <Display />

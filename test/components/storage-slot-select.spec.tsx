@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import type { WineItem, InventoryMatrix, ShelfProps } from '../../types';
+import type { WineItem, WineMatrix, ShelfProps } from '../../types';
 
 // --- Mocks ---
 
@@ -74,9 +74,9 @@ function makeWine(overrides: Partial<WineItem> & { iWine: string; Quantity: stri
   };
 }
 
-function renderStorage(inventory: InventoryMatrix = {}) {
+function renderStorage(inventory: WineMatrix = {}) {
   return render(
-    <StorageView setupId={setupId} config={config} inventory={inventory} />,
+    <StorageView setupId={setupId} config={config} wineMatrix={inventory} />,
   );
 }
 
@@ -132,7 +132,7 @@ describe('Storage slot selection', () => {
     mockSelectedWine = undefined;
 
     const wine2 = makeWine({ iWine: 'wine-2', Quantity: '1' });
-    const inventory: InventoryMatrix = { 1: { 1: { 1: wine2 } } };
+    const inventory: WineMatrix = { 1: { 1: { 1: wine2 } } };
 
     renderStorage(inventory);
 
@@ -164,7 +164,7 @@ describe('Storage slot selection', () => {
     });
     mockSelectedWine = wine1;
 
-    const inventory: InventoryMatrix = { 1: { 1: { 1: wine1 } } };
+    const inventory: WineMatrix = { 1: { 1: { 1: wine1 } } };
     renderStorage(inventory);
 
     const buttons = screen.getAllByRole('button');
@@ -181,7 +181,7 @@ describe('Storage slot selection', () => {
     mockSelectedWine = makeWine({ iWine: 'wine-1', Quantity: '1', placements: [] });
 
     const wine2 = makeWine({ iWine: 'wine-2', Quantity: '1' });
-    const inventory: InventoryMatrix = { 1: { 1: { 1: wine2 } } };
+    const inventory: WineMatrix = { 1: { 1: { 1: wine2 } } };
     renderStorage(inventory);
 
     const buttons = screen.getAllByRole('button');
@@ -215,7 +215,7 @@ describe('Storage slot selection', () => {
     ];
     mockSelectedWine = makeWine({ iWine: 'wine-1', Quantity: '5', placements: [] });
 
-    render(<StorageView setupId={setupId} config={multiShelfConfig} inventory={{}} />);
+    render(<StorageView setupId={setupId} config={multiShelfConfig} wineMatrix={{}} />);
 
     const buttons = screen.getAllByRole('button');
     // Shelf 1 has 3 buttons (indices 0–2), shelf 2 starts at index 3

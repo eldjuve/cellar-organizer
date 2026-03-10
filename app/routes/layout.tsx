@@ -9,7 +9,7 @@ import { getSession } from "~/sessions.server";
 import { Outlet, redirect, useFetcher, useRevalidator } from "react-router";
 import { TopBar } from "~/components/layout/TopBar";
 import { useEffect } from "react";
-import type { BottlesServerMessage } from "types";
+import type { PlacementMessage } from "types";
 import { clientId } from "~/clientId";
 
 export function meta({}: Route.MetaArgs) {
@@ -39,16 +39,16 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   // Backfill for existing users who logged in before this feature
   if ((await wineStore.getCount()) === 0) {
     const all = await fetchWineData(username, session.get("password")!);
-    await wineStore.setInventory(all);
+    await wineStore.setWines(all);
   }
 
-  const [filterOptions, listInventory] = await Promise.all([
+  const [filterOptions, wines] = await Promise.all([
     wineStore.getFilterOptions(),
-    wineStore.queryInventory(q || undefined, type || undefined, country || undefined, placement, params.setupId),
+    wineStore.queryWines(q || undefined, type || undefined, country || undefined, placement, params.setupId),
   ]);
 
   return {
-    listInventory,
+    wines,
     filterOptions,
     activeFilters: { q, type, country, placement },
     username,
@@ -64,16 +64,16 @@ export async function action({ request }: Route.ActionArgs) {
   const password = session.get("password")!;
   const inventory = await fetchWineData(username, password);
   const wineStore = env.WINE_STORE.getByName(username);
-  await wineStore.setInventory(inventory);
+  await wineStore.setWines(inventory);
   return { ok: true };
 }
 
-function useBottlesSync() {
+function usePlacementsSync() {
   const revalidator = useRevalidator();
   useEffect(() => {
-    const es = new EventSource(`/sse/bottles?clientId=${clientId}`);
+    const es = new EventSource(`/sse/placements?clientId=${clientId}`);
     es.onmessage = (e) => {
-      const msg = JSON.parse(e.data) as BottlesServerMessage;
+      const msg = JSON.parse(e.data) as PlacementMessage;
       if (msg.type === "placementAdded" || msg.type === "placementRemoved") {
         revalidator.revalidate();
       }
@@ -85,7 +85,7 @@ function useBottlesSync() {
 }
 
 export default function Storage({ loaderData }: Route.ComponentProps) {
-  useBottlesSync();
+  usePlacementsSync();
   const fetcher = useFetcher();
   const isRefetching = fetcher.state !== "idle";
 
@@ -113,7 +113,7 @@ const StorageLayout = ({ loaderData }: { loaderData: Route.ComponentProps["loade
       <div className="flex h-full gap-3 overflow-hidden">
         <aside className={`flex-1 overflow-y-auto rounded border border-ct-border bg-ct-surface ${activeTab === "storage" ? "max-md:hidden" : ""}`}>
           <List
-            listInventory={loaderData.listInventory}
+            wines={loaderData.wines}
             filterOptions={loaderData.filterOptions}
             activeFilters={loaderData.activeFilters}
           />

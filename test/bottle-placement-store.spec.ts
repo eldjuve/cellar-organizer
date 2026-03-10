@@ -18,12 +18,12 @@ function makeWine(iWine: string, quantity = 99): WineItem {
   };
 }
 
-describe("addPlacement / getInventory", () => {
-  it("stores a placement and getInventory returns it", async () => {
+describe("addPlacement / getWinePlacements", () => {
+  it("stores a placement and getWinePlacements returns it", async () => {
     const stub = getStub();
-    await stub.setInventory([makeWine("wine1")]);
+    await stub.setWines([makeWine("wine1")]);
     await stub.addPlacement("wine1", "setup1", 0, 0, 0);
-    const inv = await stub.getInventory();
+    const inv = await stub.getWinePlacements();
     expect(inv).toEqual({
       wine1: [{ setupId: "setup1", shelf: 0, layer: 0, slot: 0 }],
     });
@@ -31,34 +31,34 @@ describe("addPlacement / getInventory", () => {
 
   it("returns empty object on a fresh instance", async () => {
     const stub = getStub("fresh-empty");
-    const inv = await stub.getInventory();
+    const inv = await stub.getWinePlacements();
     expect(inv).toEqual({});
   });
 
   it("groups multiple placements for the same wine under one key", async () => {
     const stub = getStub("group-test");
-    await stub.setInventory([makeWine("wineA", 99)]);
+    await stub.setWines([makeWine("wineA", 99)]);
     await stub.addPlacement("wineA", "setup1", 0, 0, 0);
     await stub.addPlacement("wineA", "setup1", 1, 0, 0);
-    const inv = await stub.getInventory();
+    const inv = await stub.getWinePlacements();
     expect(inv["wineA"]).toHaveLength(2);
   });
 
   it("INSERT OR IGNORE: duplicate position is silently ignored", async () => {
     const stub = getStub("dup-pos");
-    await stub.setInventory([makeWine("wine1")]);
+    await stub.setWines([makeWine("wine1")]);
     await stub.addPlacement("wine1", "setup1", 0, 0, 0);
     await stub.addPlacement("wine1", "setup1", 0, 0, 0);
-    const inv = await stub.getInventory();
+    const inv = await stub.getWinePlacements();
     expect(inv["wine1"]).toHaveLength(1);
   });
 
   it("INSERT OR IGNORE: different wine at occupied position is ignored", async () => {
     const stub = getStub("conflict");
-    await stub.setInventory([makeWine("wine1"), makeWine("wine2")]);
+    await stub.setWines([makeWine("wine1"), makeWine("wine2")]);
     await stub.addPlacement("wine1", "setup1", 0, 0, 0);
     await stub.addPlacement("wine2", "setup1", 0, 0, 0);
-    const inv = await stub.getInventory();
+    const inv = await stub.getWinePlacements();
     expect(inv["wine1"]).toHaveLength(1);
     expect(inv["wine2"]).toBeUndefined();
   });
@@ -67,66 +67,66 @@ describe("addPlacement / getInventory", () => {
     const stub = getStub("no-wine");
     const result = await stub.addPlacement("ghost", "setup1", 0, 0, 0);
     expect(result).toEqual({ ok: false, error: "placement failed" });
-    const inv = await stub.getInventory();
+    const inv = await stub.getWinePlacements();
     expect(inv["ghost"]).toBeUndefined();
   });
 });
 
 describe("removePlacement", () => {
-  it("removes a placement, getInventory becomes empty", async () => {
+  it("removes a placement, getWinePlacements becomes empty", async () => {
     const stub = getStub("rm-basic");
-    await stub.setInventory([makeWine("wine1")]);
+    await stub.setWines([makeWine("wine1")]);
     await stub.addPlacement("wine1", "setup1", 0, 0, 0);
     await stub.removePlacement("wine1", "setup1", 0, 0, 0);
-    const inv = await stub.getInventory();
+    const inv = await stub.getWinePlacements();
     expect(inv).toEqual({});
   });
 
   it("removes one of multiple placements for the same wine", async () => {
     const stub = getStub("rm-one");
-    await stub.setInventory([makeWine("wineA", 99)]);
+    await stub.setWines([makeWine("wineA", 99)]);
     await stub.addPlacement("wineA", "setup1", 0, 0, 0);
     await stub.addPlacement("wineA", "setup1", 1, 0, 0);
     await stub.removePlacement("wineA", "setup1", 0, 0, 0);
-    const inv = await stub.getInventory();
+    const inv = await stub.getWinePlacements();
     expect(inv["wineA"]).toHaveLength(1);
     expect(inv["wineA"][0]).toEqual({ setupId: "setup1", shelf: 1, layer: 0, slot: 0 });
   });
 
   it("is a no-op when placement does not exist", async () => {
     const stub = getStub("rm-noop");
-    await stub.setInventory([makeWine("wine1")]);
+    await stub.setWines([makeWine("wine1")]);
     await stub.addPlacement("wine1", "setup1", 0, 0, 0);
     await stub.removePlacement("wine1", "setup1", 9, 9, 9);
-    const inv = await stub.getInventory();
+    const inv = await stub.getWinePlacements();
     expect(inv["wine1"]).toHaveLength(1);
   });
 
   it("does not remove a placement in a different setup", async () => {
     const stub = getStub("rm-other-setup");
-    await stub.setInventory([makeWine("wine1")]);
+    await stub.setWines([makeWine("wine1")]);
     await stub.addPlacement("wine1", "setup1", 0, 0, 0);
     await stub.removePlacement("wine1", "setup2", 0, 0, 0);
-    const inv = await stub.getInventory();
+    const inv = await stub.getWinePlacements();
     expect(inv["wine1"]).toHaveLength(1);
   });
 
   it("does not remove a placement at a different slot", async () => {
     const stub = getStub("rm-diff-slot");
-    await stub.setInventory([makeWine("wine1")]);
+    await stub.setWines([makeWine("wine1")]);
     await stub.addPlacement("wine1", "setup1", 0, 0, 0);
     await stub.removePlacement("wine1", "setup1", 0, 0, 1);
-    const inv = await stub.getInventory();
+    const inv = await stub.getWinePlacements();
     expect(inv["wine1"]).toHaveLength(1);
   });
 });
 
-describe("getInventory", () => {
+describe("getWinePlacements", () => {
   it("returns correct BottlePlacement shape for each row", async () => {
     const stub = getStub("shape-check");
-    await stub.setInventory([makeWine("wine1")]);
+    await stub.setWines([makeWine("wine1")]);
     await stub.addPlacement("wine1", "setup1", 2, 3, 4);
-    const inv = await stub.getInventory();
+    const inv = await stub.getWinePlacements();
     expect(inv["wine1"][0]).toMatchObject({
       setupId: "setup1",
       shelf: 2,
@@ -137,10 +137,10 @@ describe("getInventory", () => {
 
   it("returns placements across multiple setup IDs", async () => {
     const stub = getStub("multi-setup");
-    await stub.setInventory([makeWine("wine1", 99)]);
+    await stub.setWines([makeWine("wine1", 99)]);
     await stub.addPlacement("wine1", "setupA", 0, 0, 0);
     await stub.addPlacement("wine1", "setupB", 0, 0, 0);
-    const inv = await stub.getInventory();
+    const inv = await stub.getWinePlacements();
     expect(inv["wine1"]).toHaveLength(2);
     const setupIds = inv["wine1"].map((p: BottlePlacement) => p.setupId).sort();
     expect(setupIds).toEqual(["setupA", "setupB"]);

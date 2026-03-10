@@ -77,10 +77,10 @@ function Layer({
 }
 
 function Slot({ shelf, layer, slot }: { shelf: number; layer: number; slot: number }) {
-  const { onSlotSelect, inventory } = useStorageContext();
+  const { onSlotSelect, wineMatrix } = useStorageContext();
   const { selectedWine } = useAppContext();
 
-  const wine = inventory[shelf]?.[layer]?.[slot];
+  const wine = wineMatrix[shelf]?.[layer]?.[slot];
 
   const handleSelect = () => {
     onSlotSelect(shelf, layer, slot);

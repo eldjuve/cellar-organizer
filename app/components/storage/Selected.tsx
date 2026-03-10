@@ -46,12 +46,12 @@ const WinePosition = () => {
 };
 
 const WineDisplay = ({ wine }: { wine: WineItem }) => {
-  const { inventory } = useStorageContext();
+  const { wineMatrix } = useStorageContext();
   const { setSelectedWineId } = useAppContext();
 
   const locations: BottlePlacement[] = [];
   
-  for (const [shelf, layers] of Object.entries(inventory)) {
+  for (const [shelf, layers] of Object.entries(wineMatrix)) {
     for (const [layer, slots] of Object.entries(layers)) {
       for (const [slot, w] of Object.entries(slots)) {
         if (w.iWine === wine.iWine) {
@@ -101,12 +101,12 @@ const WineDisplay = ({ wine }: { wine: WineItem }) => {
 };
 
 const LocationDeselector = ({ placement }: { placement: BottlePlacement }) => {
-  const { removeFromInventory } = useStorageContext();
+  const { removeWineFromSlot } = useStorageContext();
 
   return (
     <button
       className="flex items-center gap-1 rounded border border-ct-border bg-ct-surface text-ct-muted text-xs px-2 py-0.5 hover:border-ct-primary transition-colors"
-      onClick={() => removeFromInventory(placement.shelf, placement.layer, placement.slot)}
+      onClick={() => removeWineFromSlot(placement.shelf, placement.layer, placement.slot)}
     >
       <LocationBadge placement={placement} />
       <span className="text-ct-primary">×</span>

@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
-import type { InventoryMatrix, WineItem } from "types";
+import type { WineMatrix, WineItem } from "types";
 import { clientId } from "~/clientId";
 
-export function useWinesInSetup(winesInCurrentSetup: InventoryMatrix) {
+export function useWinesInSetup(winesInCurrentSetup: WineMatrix) {
   const fetcher = useFetcher();
-  const [winesInSetup, setWinesInSetup] = useState<InventoryMatrix>(winesInCurrentSetup);
+  const [wineMatrix, setWineMatrix] = useState<WineMatrix>(winesInCurrentSetup);
 
   useEffect(() => {
-    setWinesInSetup(winesInCurrentSetup);
+    setWineMatrix(winesInCurrentSetup);
   }, [winesInCurrentSetup]);
 
   const placeWine = (wine: WineItem, shelf: number, layer: number, slot: number) => {
-    setWinesInSetup(prev => ({
+    setWineMatrix(prev => ({
       ...prev,
       [shelf]: { ...prev[shelf], [layer]: { ...prev[shelf]?.[layer], [slot]: wine } },
     }));
@@ -23,7 +23,7 @@ export function useWinesInSetup(winesInCurrentSetup: InventoryMatrix) {
   };
 
   const removeWine = (iWine: string, shelf: number, layer: number, slot: number) => {
-    setWinesInSetup(prev => {
+    setWineMatrix(prev => {
       const next = { ...prev, [shelf]: { ...prev[shelf], [layer]: { ...prev[shelf]?.[layer] } } };
       delete next[shelf][layer][slot];
       return next;
@@ -34,10 +34,5 @@ export function useWinesInSetup(winesInCurrentSetup: InventoryMatrix) {
     );
   };
 
-  const removeFromInventory = (shelf: number, layer: number, slot: number) => {
-    const iWine = winesInSetup[shelf]?.[layer]?.[slot]?.iWine;
-    if (iWine) removeWine(iWine, shelf, layer, slot);
-  };
-
-  return { winesInSetup, placeWine, removeWine, removeFromInventory };
+  return { wineMatrix, placeWine, removeWine };
 }
