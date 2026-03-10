@@ -14,7 +14,7 @@ const defaultConfig = [
   { capacity: 6, innerRow: false },
 ];
 
-export function Fridge({ config }: { config?: ShelfProps[] }) {
+export function Storage({ config }: { config?: ShelfProps[] }) {
   const shelfs = config ?? defaultConfig;
   const maxCapacity = Math.max(...shelfs.map((shelf) => shelf.capacity));
 
@@ -78,9 +78,12 @@ function Layer({
 
 function Slot({ shelf, layer, slot }: { shelf: number; layer: number; slot: number }) {
   const { onSlotSelect, wineMatrix } = useStorageContext();
-  const { selectedWine } = useAppContext();
+  const { selectedWine, selectedPosition } = useAppContext();
 
   const wine = wineMatrix[shelf]?.[layer]?.[slot];
+
+  const isSelected =  (selectedPosition?.shelf === shelf && selectedPosition?.layer === layer && selectedPosition?.slot === slot)
+  || (selectedWine !== undefined && selectedWine.iWine === wine?.iWine);  
 
   const handleSelect = () => {
     onSlotSelect(shelf, layer, slot);
@@ -91,7 +94,7 @@ function Slot({ shelf, layer, slot }: { shelf: number; layer: number; slot: numb
       <button
         className="slot-button"
         data-color={wine?.Color}
-        data-selected={(selectedWine !== undefined && selectedWine.iWine === wine?.iWine) || undefined}
+        data-selected={isSelected || undefined}
         onClick={handleSelect}
       ></button>
     </div>

@@ -1,4 +1,4 @@
-import { Shelf } from "~/components/storage/Fridge";
+import { Shelf } from "~/components/storage/Storage";
 import { StorageContext } from "~/components/storage/StorageContext";
 import { getSession } from "~/sessions.server";
 import type { Route } from "./+types/config";

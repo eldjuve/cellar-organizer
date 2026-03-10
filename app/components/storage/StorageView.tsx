@@ -3,7 +3,7 @@ import { useFetcher, useRevalidator } from "react-router";
 import type { StorageConfigMessage, WineMatrix, ShelfProps } from "types";
 import { useAppContext } from "../AppContextProvider";
 import { useWinesInConfig } from "./useWinesInConfig";
-import { Fridge } from "./Fridge";
+import { Storage } from "./Storage";
 import { Display } from "./Selected";
 import { clientId } from "~/clientId";
 import { StorageContext } from "./StorageContext";
@@ -70,7 +70,7 @@ export function StorageView({ configId, config, wineMatrix: winesInCurrentSetup 
   return (
     <StorageContext.Provider value={{ wineMatrix, onSlotSelect, removeWineFromSlot }}>
       <div className="grow grid rounded border border-ct-border bg-ct-surface overflow-hidden">
-        <Fridge config={config} />
+        <Storage config={config} />
         <Display />
       </div>
     </StorageContext.Provider>
