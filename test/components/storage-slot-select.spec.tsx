@@ -13,6 +13,8 @@ const mockSetSelectedWineId = vi.fn();
 const mockSetSelectedPosition = vi.fn();
 let mockSelectedWine: WineItem | undefined = undefined;
 
+let mockSelectedPosition: import('../../types').BottlePlacement | undefined = undefined;
+
 vi.mock('../../app/components/AppContextProvider', () => ({
   useAppContext: () => ({
     selectedWine: mockSelectedWine,
@@ -21,7 +23,7 @@ vi.mock('../../app/components/AppContextProvider', () => ({
     activeTab: 'storage' as const,
     toggleTab: vi.fn(),
     setActiveTab: vi.fn(),
-    selectedPosition: undefined,
+    selectedPosition: mockSelectedPosition,
   }),
 }));
 
@@ -82,6 +84,7 @@ function renderStorage(inventory: InventoryMatrix = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockSelectedWine = undefined;
+  mockSelectedPosition = undefined;
 });
 
 describe('Storage slot selection', () => {
@@ -185,6 +188,23 @@ describe('Storage slot selection', () => {
 
     expect(mockSetSelectedWineId).toHaveBeenCalledWith('wine-2');
     expect(mockFetcherSubmit).not.toHaveBeenCalled();
+  });
+
+  it('Test 7 — position pre-selected, not-fully-placed wine selected → wine placed at position', () => {
+    mockSelectedPosition = { setupId, shelf: 1, layer: 1, slot: 1 };
+    mockSelectedWine = makeWine({
+      iWine: 'wine-1',
+      Quantity: '3',
+      placements: [{ setupId, shelf: 1, layer: 1, slot: 2 }],
+    });
+
+    renderStorage({}); // slot 1 empty in inventory
+
+    expect(mockFetcherSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ intent: 'add', iWine: 'wine-1', shelf: '1', layer: '1', slot: '1' }),
+      expect.anything(),
+    );
+    expect(mockSetSelectedPosition).toHaveBeenCalledWith(undefined);
   });
 
   it('Test 8 — coordinate fidelity: second shelf slot passes correct shelf/layer/slot', () => {
