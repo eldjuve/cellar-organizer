@@ -80,7 +80,8 @@ app/components/
   storage/
     StorageView.tsx        — StorageView + StorageContext provider + SSE config sync
     StorageContext.tsx     — React context for slot selection and wine matrix
-    Storage.tsx            — shelf/slot grid
+    Storage.tsx            — shelf/slot grid (Shelf + Layer components)
+    Slot.tsx               — individual slot button; scrolls to center when selected
     Selected.tsx           — selected wine/position detail panel
     ConfigSelector.tsx     — config dropdown + edit/new links
     useWinesInConfig.ts    — optimistic wine matrix state

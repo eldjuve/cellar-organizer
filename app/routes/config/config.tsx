@@ -14,7 +14,7 @@ import { AppContextProvider } from "~/components/AppContextProvider";
 const emptyStorageCtx = {
   onSlotSelect: () => {},
   removeWineFromSlot: () => {},
-  wineMatrix: {},
+  wineMatrix: {}
 };
 
 export async function loader({ request, params }: Route.LoaderArgs) {
