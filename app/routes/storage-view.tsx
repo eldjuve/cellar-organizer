@@ -61,7 +61,7 @@ export default function StorageView_({ loaderData }: Route.ComponentProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!selectedWine?.placements?.length) return;
+    if (!selectedWine?.placements.length) return;
     const inCurrentConfig = selectedWine.placements.some(
       (p) => p.configId === loaderData.activeConfigId
     );

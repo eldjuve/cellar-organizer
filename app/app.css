@@ -104,6 +104,11 @@ body {
     box-shadow: 0 0 0 3px var(--color-ct-primary-light), 0 0 8px 2px rgba(142, 32, 41, 0.35);
     z-index: 1;
   }
+
+  &[data-overplaced] {
+    border-color: #B45309;
+    box-shadow: 0 0 0 2px #FDE68A;
+  }
 }
 
 .double-row {

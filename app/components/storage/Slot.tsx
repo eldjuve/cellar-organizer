@@ -8,8 +8,9 @@ export function Slot({ shelf, layer, slot }: { shelf: number; layer: number; slo
 
   const wine = wineMatrix[shelf]?.[layer]?.[slot];
 
-  const isSelected =  (selectedPosition?.shelf === shelf && selectedPosition?.layer === layer && selectedPosition?.slot === slot)
-  || (selectedWine !== undefined && selectedWine.iWine === wine?.iWine);
+  const isSelected = (selectedPosition?.shelf === shelf && selectedPosition?.layer === layer && selectedPosition?.slot === slot)
+    || (selectedWine !== undefined && selectedWine.iWine === wine?.iWine);
+  const isOverPlaced = wine !== undefined && wine.placements.length > Number(wine.Quantity);
 
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -30,6 +31,7 @@ export function Slot({ shelf, layer, slot }: { shelf: number; layer: number; slo
         className="slot-button"
         data-color={wine?.Color}
         data-selected={isSelected || undefined}
+        data-overplaced={isOverPlaced || undefined}
         onClick={handleSelect}
       ></button>
     </div>

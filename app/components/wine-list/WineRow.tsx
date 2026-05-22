@@ -9,11 +9,12 @@ export const WineRow = ({
 }) => {
   const { selectedWine, setSelectedWineId, selectedPosition } = useAppContext();
 
-  const locations = wine.placements ?? [];
+  const locations = wine.placements;
   const quantity = Number(wine.Quantity);
-  const disabled = !!(selectedPosition && locations.length === quantity);
+  const overPlaced = locations.length > quantity;
+  const disabled = !!(selectedPosition && locations.length >= quantity);
   const isSelected = selectedWine?.iWine === wine.iWine;
-  const fullyStored = locations.length === quantity;
+  const fullyStored = !overPlaced && locations.length === quantity;
   const ref = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export const WineRow = ({
       disabled={disabled}
       className={`flex items-center px-3 py-2 w-full text-sm text-left transition-colors
         disabled:opacity-45 disabled:cursor-default disabled:pointer-events-none
-        ${isSelected ? "bg-ct-primary-light" : "hover:bg-ct-primary-light"}`}
+        ${overPlaced ? "bg-amber-50" : isSelected ? "bg-ct-primary-light" : "hover:bg-ct-primary-light"}`}
     >
       <div className="flex flex-col flex-1 min-w-0">
         <span className="font-medium truncate text-ct-primary">
@@ -46,7 +47,9 @@ export const WineRow = ({
       </div>
       <div className="ml-3 flex items-center gap-1 shrink-0 tabular-nums text-ct-muted">
         <span>{locations.length}/{quantity}</span>
-        {fullyStored ? (
+        {overPlaced ? (
+          <span className="text-amber-600">!</span>
+        ) : fullyStored ? (
           <span className="text-green-600">✓</span>
         ) : locations.length > 0 ? (
           <span className="text-ct-primary">·</span>

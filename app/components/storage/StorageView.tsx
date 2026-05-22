@@ -35,7 +35,7 @@ export function StorageView({ configId, config, wineMatrix: winesInCurrentSetup 
     if (!selectedWine || !selectedPosition) return;
     const { shelf, layer, slot } = selectedPosition;
     if (wineMatrix[shelf]?.[layer]?.[slot]) return; // slot occupied
-    if ((selectedWine.placements?.length ?? 0) >= Number(selectedWine.Quantity)) return; // fully placed
+    if (selectedWine.placements.length >= Number(selectedWine.Quantity)) return; // fully placed
     placeWine(selectedWine, shelf, layer, slot);
     setSelectedPosition(undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -55,7 +55,7 @@ export function StorageView({ configId, config, wineMatrix: winesInCurrentSetup 
       }
       setSelectedWineId(wineAtPosition.iWine);
     } else if (selectedWine) {
-      if ((selectedWine.placements?.length ?? 0) >= Number(selectedWine.Quantity)) {
+      if (selectedWine.placements.length >= Number(selectedWine.Quantity)) {
         setSelectedPosition({ configId, shelf, layer, slot });
         setSelectedWineId(undefined);
         return;

@@ -71,9 +71,9 @@ const WineDisplay = ({ wine }: { wine: WineItem }) => {
       </div>
       <div className="shrink-0 text-right">
         <p className="text-sm font-medium tabular-nums text-ct-text">
-          {wine.placements?.length}/{Number(wine.Quantity)} stored
+          {wine.placements.length}/{Number(wine.Quantity)} stored
         </p>
-        {wine.placements  && (
+        {wine.placements.length > 0 && (
           <ul className="mt-1 space-y-1">
             {wine.placements.map((placement) => (
               <li key={`${placement.configId}:${placement.shelf}.${placement.layer}.${placement.slot}`}>

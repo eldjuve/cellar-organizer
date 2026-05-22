@@ -39,7 +39,7 @@ import { StorageView } from '../../app/components/storage/StorageView';
 const config: ShelfProps[] = [{ capacity: 3, innerRow: false }];
 const configId = 'setup-1';
 
-function makeWine(overrides: Partial<WineItem> & { iWine: string; Quantity: string; placements?: WineItem['placements'] }): WineItem {
+function makeWine(overrides: Partial<WineItem> & { iWine: string; Quantity: string }): WineItem {
   return {
     WineBarcode: '',
     Pending: '0',
@@ -70,6 +70,7 @@ function makeWine(overrides: Partial<WineItem> & { iWine: string; Quantity: stri
     BeginConsume: '',
     EndConsume: '',
     UPC: '',
+    placements: [],
     ...overrides,
   };
 }
