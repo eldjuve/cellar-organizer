@@ -65,7 +65,7 @@ export type WineItem = {
   BeginConsume: string;
   EndConsume: string;
   UPC: string;
-  placements?: BottlePlacement[];
+  placements: BottlePlacement[];
 };
 
 export type BottlePlacement = { configId: string; shelf: number; layer: number; slot: number };

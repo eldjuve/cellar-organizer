@@ -32,6 +32,7 @@ function makeWine(overrides: Partial<WineItem> & { iWine: string; Wine: string; 
     BeginConsume: "",
     EndConsume: "",
     UPC: "",
+    placements: [],
     ...overrides,
   };
 }
@@ -497,7 +498,7 @@ describe("getWineById", () => {
     const result = await stub.getWineById("1");
     expect(result).not.toBeNull();
     expect(result!.iWine).toBe("1");
-    expect(result!.placements).toBeUndefined();
+    expect(result!.placements).toEqual([]);
   });
 
   it("returns wine with placements joined", async () => {

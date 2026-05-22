@@ -89,8 +89,7 @@ export class WineInventoryStore extends DurableObject<Env> {
       .map((r) => {
         const wine: WineItem = JSON.parse(r.data);
         const rawPlacements: (BottlePlacement | null)[] = JSON.parse(r.placements_json);
-        const placements = rawPlacements.filter((p): p is BottlePlacement => p !== null);
-        if (placements.length > 0) wine.placements = placements;
+        wine.placements = rawPlacements.filter((p): p is BottlePlacement => p !== null);
         return wine;
       });
     this.#set(key, result);
@@ -113,8 +112,7 @@ export class WineInventoryStore extends DurableObject<Env> {
     if (!rows.length) return null;
     const wine: WineItem = JSON.parse(rows[0].data);
     const rawPlacements: (BottlePlacement | null)[] = JSON.parse(rows[0].placements_json);
-    const placements = rawPlacements.filter((p): p is BottlePlacement => p !== null);
-    if (placements.length > 0) wine.placements = placements;
+    wine.placements = rawPlacements.filter((p): p is BottlePlacement => p !== null);
     return wine;
   }
 
@@ -179,18 +177,23 @@ export class WineInventoryStore extends DurableObject<Env> {
   getWineMatrix(configId: string): WineMatrix {
     const hit = this.#get<WineMatrix>(`ws:${configId}`);
     if (hit) return hit;
-    type Row = { data: string; shelf: number; layer: number; slot: number };
+    type Row = { data: string; shelf: number; layer: number; slot: number; placements_json: string };
     const rows = [...this.ctx.storage.sql.exec<Row>(
-      `SELECT w.data, p.shelf, p.layer, p.slot FROM wines w
-       JOIN placements p ON w.iWine = p.iWine
-       WHERE p.setup_id = ?`,
+      `SELECT w.data, p.shelf, p.layer, p.slot,
+              json_group_array(json_object('configId', p2.setup_id, 'shelf', p2.shelf, 'layer', p2.layer, 'slot', p2.slot)) AS placements_json
+       FROM wines w
+       JOIN placements p  ON w.iWine = p.iWine AND p.setup_id = ?
+       JOIN placements p2 ON w.iWine = p2.iWine
+       GROUP BY p.shelf, p.layer, p.slot`,
       configId,
     )];
     const matrix: WineMatrix = {};
-    for (const { data, shelf, layer, slot } of rows) {
+    for (const { data, shelf, layer, slot, placements_json } of rows) {
+      const wine: WineItem = JSON.parse(data);
+      wine.placements = JSON.parse(placements_json);
       matrix[shelf] ??= {};
       matrix[shelf][layer] ??= {};
-      matrix[shelf][layer][slot] = JSON.parse(data);
+      matrix[shelf][layer][slot] = wine;
     }
     this.#set(`ws:${configId}`, matrix);
     return matrix;

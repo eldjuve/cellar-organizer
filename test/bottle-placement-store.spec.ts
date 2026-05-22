@@ -14,7 +14,7 @@ function makeWine(iWine: string, quantity = 99): WineItem {
     Country: "", Region: "", SubRegion: "", Appellation: "", SortProducer: "",
     Type: "Red", Color: "Red", Category: "", Varietal: "", MasterVarietal: "",
     Designation: "", Vineyard: "", CT: "", CNotes: "", BeginConsume: "",
-    EndConsume: "", UPC: "",
+    EndConsume: "", UPC: "", placements: [],
   };
 }
 
